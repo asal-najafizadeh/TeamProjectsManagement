@@ -1,0 +1,1488 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ثبت سفارش</title>
+  <script src="{{ url_for('serve_tailwind_bundle') }}"></script>
+  <style>
+    @font-face {
+      font-family: "Dana";
+      src: url("{{ url_for('serve_assets', filename='fonts/Dana-Black.ttf') }}") format("truetype");
+      font-weight: 100 900;
+      font-style: normal;
+      font-display: swap;
+    }
+    html:has(body.order-page) {
+      font-family: "Dana", "Tahoma", ui-sans-serif, system-ui, sans-serif;
+    }
+    body.order-page {
+      font-family: "Dana", "Tahoma", ui-sans-serif, system-ui, sans-serif;
+      background: radial-gradient(ellipse 120% 80% at 100% 0%, rgba(59, 130, 246, 0.18), transparent 50%),
+        radial-gradient(ellipse 100% 60% at 0% 100%, rgba(236, 72, 153, 0.14), transparent 45%),
+        radial-gradient(ellipse 80% 50% at 50% 50%, rgba(234, 179, 8, 0.06), transparent 40%),
+        #0a0a0f;
+      min-height: 100vh;
+    }
+    body.order-page button,
+    body.order-page input,
+    body.order-page textarea,
+    body.order-page select {
+      font-family: inherit;
+    }
+    .order-svc-card {
+      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+    }
+    .order-svc-card:hover {
+      transform: translateY(-2px);
+    }
+    /* ── نوار دسته‌بندی ── */
+    .order-cat-nav {
+      position: sticky;
+      top: 0.75rem;
+      z-index: 30;
+      margin-bottom: 1.25rem;
+      border-radius: 1.25rem;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: linear-gradient(145deg, rgba(15, 23, 42, 0.92) 0%, rgba(3, 7, 18, 0.96) 100%);
+      box-shadow:
+        0 12px 40px -8px rgba(0, 0, 0, 0.65),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      overflow: hidden;
+    }
+    .order-cat-nav::before {
+      content: "";
+      display: block;
+      height: 3px;
+      background: linear-gradient(90deg, #3b82f6, #a855f7, #ec4899, #f59e0b);
+      opacity: 0.85;
+    }
+    .order-cat-nav-inner {
+      padding: 0.875rem 1rem 1rem;
+    }
+    .order-cat-nav-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.625rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .order-cat-nav-header-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.75rem;
+      height: 1.75rem;
+      border-radius: 0.5rem;
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.35), rgba(168, 85, 247, 0.35));
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      font-size: 0.75rem;
+      color: #bfdbfe;
+    }
+    .order-cat-nav-title {
+      font-size: 0.875rem;
+      font-weight: 700;
+      color: #f5f5f5;
+      letter-spacing: -0.01em;
+    }
+    .order-cat-nav-hint {
+      margin-right: auto;
+      font-size: 0.7rem;
+      color: rgba(163, 163, 163, 0.85);
+    }
+    .order-cat-nav-scroll {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      overflow-x: auto;
+      padding: 0.125rem 0.125rem 0.375rem;
+      scroll-snap-type: x proximity;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+      mask-image: linear-gradient(to left, transparent, #000 20px, #000 calc(100% - 20px), transparent);
+      -webkit-mask-image: linear-gradient(to left, transparent, #000 20px, #000 calc(100% - 20px), transparent);
+    }
+    .order-cat-nav-scroll::-webkit-scrollbar {
+      height: 4px;
+    }
+    .order-cat-nav-scroll::-webkit-scrollbar-thumb {
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.18);
+    }
+    .order-tab {
+      flex-shrink: 0;
+      scroll-snap-align: start;
+      position: relative;
+      border-radius: 9999px;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      background: rgba(255, 255, 255, 0.06);
+      padding: 0.55rem 1.15rem;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: #d4d4d4;
+      white-space: nowrap;
+      transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+    }
+    .order-tab::after {
+      content: "";
+      position: absolute;
+      bottom: -2px;
+      left: 50%;
+      width: 0;
+      height: 2px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #60a5fa, #c084fc);
+      transform: translateX(-50%);
+      transition: width 0.22s ease;
+    }
+    .order-tab:hover {
+      background: rgba(255, 255, 255, 0.11);
+      border-color: rgba(255, 255, 255, 0.28);
+      color: #fff;
+      transform: translateY(-1px);
+    }
+    .order-tab-active {
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.42) 0%, rgba(124, 58, 237, 0.38) 100%);
+      border-color: rgba(147, 197, 253, 0.55);
+      color: #fff;
+      box-shadow:
+        0 6px 22px -4px rgba(59, 130, 246, 0.45),
+        inset 0 1px 0 rgba(255, 255, 255, 0.12);
+      transform: translateY(-1px);
+    }
+    .order-tab-active::after {
+      width: 60%;
+    }
+    .order-tab-plans {
+      border-color: rgba(251, 191, 36, 0.45);
+      background: rgba(245, 158, 11, 0.14);
+      color: #fde68a;
+    }
+    .order-tab-plans:hover {
+      background: rgba(245, 158, 11, 0.22);
+      border-color: rgba(252, 211, 77, 0.55);
+      color: #fff;
+    }
+    .order-tab-plans.order-tab-active {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.48) 0%, rgba(234, 88, 12, 0.38) 100%);
+      border-color: rgba(252, 211, 77, 0.65);
+      box-shadow:
+        0 6px 22px -4px rgba(245, 158, 11, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      color: #fff;
+    }
+    .order-tab-plans.order-tab-active::after {
+      background: linear-gradient(90deg, #fbbf24, #f97316);
+    }
+    @media (max-width: 640px) {
+      .order-cat-nav-hint { display: none; }
+      .order-tab { padding: 0.5rem 0.95rem; font-size: 0.78rem; }
+    }
+    .plan-neon-card {
+      transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+    }
+    .plan-neon-card:hover {
+      transform: translateY(-5px);
+    }
+    .plan-neon-card:focus-within {
+      outline: none;
+    }
+    .plan-service-scroll {
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+    }
+    .plan-service-scroll::-webkit-scrollbar {
+      width: 6px;
+    }
+    .plan-service-scroll::-webkit-scrollbar-thumb {
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.2);
+    }
+    .svc-ac-wrap { position: relative; }
+    .svc-ac-list {
+      position: absolute; z-index: 40; top: 100%; right: 0; left: 0; margin-top: 4px;
+      max-height: 11rem; overflow-y: auto; border-radius: 0.75rem;
+      border: 1px solid rgba(255,255,255,0.12); background: #0a0a0a; box-shadow: 0 12px 28px rgba(0,0,0,0.45);
+    }
+    .svc-ac-item {
+      display: block; width: 100%; text-align: right; padding: 0.5rem 0.75rem;
+      font-size: 0.8rem; color: #e5e5e5; cursor: pointer;
+    }
+    .svc-ac-item:hover, .svc-ac-item.svc-ac-active { background: rgba(217,70,239,0.2); color: #fff; }
+  </style>
+</head>
+<body class="order-page text-neutral-100 antialiased">
+  {# پالت‌های رنگی برای زیردسته‌ها (چرخشی) #}
+  {% set sub_palettes = [
+    {'head': 'from-sky-500 to-blue-600', 'border': 'border-sky-400/35', 'head_text': 'text-white', 'card_border': 'border-sky-400/25', 'card_bg': 'bg-sky-950/35', 'price': 'text-sky-300', 'accent': 'accent-sky-400'},
+    {'head': 'from-fuchsia-500 to-pink-600', 'border': 'border-fuchsia-400/35', 'head_text': 'text-white', 'card_border': 'border-fuchsia-400/25', 'card_bg': 'bg-fuchsia-950/35', 'price': 'text-fuchsia-300', 'accent': 'accent-fuchsia-400'},
+    {'head': 'from-amber-400 to-orange-600', 'border': 'border-amber-400/35', 'head_text': 'text-neutral-900', 'card_border': 'border-amber-400/25', 'card_bg': 'bg-amber-950/40', 'price': 'text-amber-200', 'accent': 'accent-amber-400'},
+    {'head': 'from-rose-500 to-red-600', 'border': 'border-rose-400/35', 'head_text': 'text-white', 'card_border': 'border-rose-400/25', 'card_bg': 'bg-rose-950/35', 'price': 'text-rose-300', 'accent': 'accent-rose-400'},
+    {'head': 'from-violet-500 to-indigo-600', 'border': 'border-violet-400/35', 'head_text': 'text-white', 'card_border': 'border-violet-400/25', 'card_bg': 'bg-violet-950/35', 'price': 'text-violet-300', 'accent': 'accent-violet-400'},
+    {'head': 'from-cyan-400 to-teal-600', 'border': 'border-cyan-400/35', 'head_text': 'text-white', 'card_border': 'border-cyan-400/25', 'card_bg': 'bg-teal-950/35', 'price': 'text-cyan-300', 'accent': 'accent-cyan-400'},
+  ] %}
+  {% set plan_palettes = [
+    {'border': 'border-cyan-400/80', 'ring': 'ring-cyan-400/25', 'bg': 'bg-gradient-to-b from-cyan-950/70 via-slate-950/90 to-black', 'shadow': 'shadow-[0_0_32px_rgba(34,211,238,0.28)]', 'hover_shadow': 'hover:shadow-[0_0_44px_rgba(34,211,238,0.42)]', 'line': 'via-cyan-400/50', 'dot': 'bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.9)]', 'accent': 'accent-cyan-400', 'price': 'text-cyan-200/90', 'foot': 'text-cyan-200/60'},
+    {'border': 'border-fuchsia-400/80', 'ring': 'ring-fuchsia-400/25', 'bg': 'bg-gradient-to-b from-fuchsia-950/70 via-slate-950/90 to-black', 'shadow': 'shadow-[0_0_32px_rgba(232,121,249,0.28)]', 'hover_shadow': 'hover:shadow-[0_0_44px_rgba(232,121,249,0.4)]', 'line': 'via-fuchsia-400/50', 'dot': 'bg-fuchsia-400 shadow-[0_0_10px_rgba(232,121,249,0.9)]', 'accent': 'accent-fuchsia-400', 'price': 'text-fuchsia-200/90', 'foot': 'text-fuchsia-200/60'},
+    {'border': 'border-lime-400/80', 'ring': 'ring-lime-400/25', 'bg': 'bg-gradient-to-b from-lime-950/50 via-slate-950/90 to-black', 'shadow': 'shadow-[0_0_32px_rgba(163,230,53,0.26)]', 'hover_shadow': 'hover:shadow-[0_0_44px_rgba(163,230,53,0.38)]', 'line': 'via-lime-400/50', 'dot': 'bg-lime-400 shadow-[0_0_10px_rgba(190,242,100,0.85)]', 'accent': 'accent-lime-400', 'price': 'text-lime-200/90', 'foot': 'text-lime-200/60'},
+    {'border': 'border-amber-400/85', 'ring': 'ring-amber-400/25', 'bg': 'bg-gradient-to-b from-amber-950/65 via-slate-950/90 to-black', 'shadow': 'shadow-[0_0_32px_rgba(251,191,36,0.28)]', 'hover_shadow': 'hover:shadow-[0_0_44px_rgba(251,191,36,0.42)]', 'line': 'via-amber-400/55', 'dot': 'bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.9)]', 'accent': 'accent-amber-400', 'price': 'text-amber-200/90', 'foot': 'text-amber-200/60'},
+    {'border': 'border-violet-400/80', 'ring': 'ring-violet-400/25', 'bg': 'bg-gradient-to-b from-violet-950/70 via-slate-950/90 to-black', 'shadow': 'shadow-[0_0_32px_rgba(167,139,250,0.28)]', 'hover_shadow': 'hover:shadow-[0_0_44px_rgba(167,139,250,0.4)]', 'line': 'via-violet-400/50', 'dot': 'bg-violet-400 shadow-[0_0_10px_rgba(167,139,250,0.9)]', 'accent': 'accent-violet-400', 'price': 'text-violet-200/90', 'foot': 'text-violet-200/60'},
+    {'border': 'border-rose-400/80', 'ring': 'ring-rose-400/25', 'bg': 'bg-gradient-to-b from-rose-950/65 via-slate-950/90 to-black', 'shadow': 'shadow-[0_0_32px_rgba(251,113,133,0.28)]', 'hover_shadow': 'hover:shadow-[0_0_44px_rgba(251,113,133,0.4)]', 'line': 'via-rose-400/50', 'dot': 'bg-rose-400 shadow-[0_0_10px_rgba(251,113,133,0.9)]', 'accent': 'accent-rose-400', 'price': 'text-rose-200/90', 'foot': 'text-rose-200/60'},
+  ] %}
+
+  <main class="mx-auto w-[80%] max-w-none px-4 py-6 md:px-6">
+    <header class="mb-5 flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <h1 class="bg-gradient-to-l from-white via-neutral-100 to-neutral-400 bg-clip-text text-2xl font-black tracking-tight text-transparent">ثبت سفارش</h1>
+        <p class="mt-1 text-sm text-neutral-500">دستهٔ اصلی را انتخاب کن؛ خدمات زیر هر زیردسته جدا نمایش داده می‌شود.</p>
+      </div>
+      <div class="flex flex-wrap items-center gap-2">
+        <button type="button" id="btn-open-custom-order" class="rounded-xl border border-violet-400/40 bg-violet-500/15 px-4 py-2 text-sm font-semibold text-violet-100 backdrop-blur-sm transition hover:bg-violet-500/25">ثبت سفارش جدید</button>
+        <a href="{{ url_for('modir') }}" class="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-neutral-200 backdrop-blur-sm transition hover:bg-white/10">پنل مدیریت</a>
+      </div>
+    </header>
+
+    <section class="mb-5 rounded-2xl border border-white/10 bg-black/30 p-4 shadow-xl shadow-black/40 backdrop-blur-md">
+      <div class="mb-3 flex items-center justify-between gap-2">
+        <h2 class="text-base font-bold text-white">سبد خرید</h2>
+        <span id="cart-total" class="rounded-full bg-gradient-to-l from-emerald-500 to-teal-600 px-3 py-1 text-sm font-bold text-white shadow-lg shadow-emerald-500/20">۰ تومان</span>
+      </div>
+      <ul id="cart-items" class="space-y-2 text-sm text-neutral-300">
+        <li class="text-neutral-500">هنوز موردی انتخاب نشده است.</li>
+      </ul>
+    </section>
+
+    <nav class="order-cat-nav" aria-label="دسته‌بندی خدمات">
+      <div class="order-cat-nav-inner">
+        <div class="order-cat-nav-header">
+          <span class="order-cat-nav-header-icon" aria-hidden="true">☰</span>
+          <span class="order-cat-nav-title">دسته‌بندی خدمات</span>
+          <span class="order-cat-nav-hint">برای مشاهده خدمات، یک دسته را انتخاب کنید</span>
+        </div>
+        <div class="order-cat-nav-scroll">
+          {% for og in order_category_groups %}
+          <button type="button" class="order-tab" data-target="cat-{{ og.parent.id }}">{{ og.parent.name }}</button>
+          {% endfor %}
+          <button type="button" class="order-tab order-tab-plans" data-target="plans-tab">پلن‌ها</button>
+        </div>
+      </div>
+    </nav>
+
+    {% for og in order_category_groups %}
+    <section id="cat-{{ og.parent.id }}" class="tab-panel hidden space-y-6 rounded-2xl border border-white/10 bg-black/20 p-5 backdrop-blur-sm">
+      <div class="flex flex-wrap items-end justify-between gap-2 border-b border-white/10 pb-3">
+        <h3 class="text-lg font-bold text-white">{{ og.parent.name }}</h3>
+        <span class="text-xs font-medium text-neutral-500">دستهٔ اصلی</span>
+      </div>
+
+      {% if og.child_sections %}
+      {% for sec in og.child_sections %}
+      {% set pal = sub_palettes[loop.index0 % (sub_palettes|length)] %}
+      <div class="overflow-hidden rounded-2xl border {{ pal.border }} bg-black/20 shadow-lg">
+        <div class="bg-gradient-to-l {{ pal.head }} px-4 py-3">
+          <h4 class="text-base font-bold {{ pal.head_text }}">{{ sec.child.name }}</h4>
+          <p class="mt-0.5 text-xs opacity-90 {{ pal.head_text }}">زیردسته</p>
+        </div>
+        <div class="p-4">
+          {% if sec.services %}
+          <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {% for s in sec.services %}
+            <label class="order-svc-card flex cursor-pointer flex-col rounded-xl border {{ pal.card_border }} {{ pal.card_bg }} p-3 shadow-md hover:shadow-lg">
+              <div class="flex items-start gap-2">
+                <input type="checkbox" class="item-cb mt-1 h-4 w-4 shrink-0 rounded border-white/20 {{ pal.accent }}" data-kind="service" data-id="{{ s.id }}" data-name="{{ s.name }}" data-price="{{ s.price or '' }}">
+                <div class="min-w-0 flex-1">
+                  <p class="font-semibold text-white">{{ s.name }}</p>
+                  {% set svc_terms = s.get('terms') or [] %}
+                  {% if svc_terms %}
+                  <ul class="mt-2 space-y-1.5">
+                    {% for term in svc_terms %}
+                    <li class="flex items-start gap-2 rounded-lg border border-white/10 bg-black/25 px-2 py-1 text-[11px] leading-relaxed text-neutral-200 shadow-[0_0_14px_rgba(255,255,255,0.06)]">
+                      <span class="mt-1 h-1.5 w-1.5 shrink-0 rounded-full {{ pal.price }} shadow-[0_0_10px_rgba(255,255,255,0.45)]"></span>
+                      <span class="min-w-0 break-words">{{ term }}</span>
+                    </li>
+                    {% endfor %}
+                  </ul>
+                  {% elif s.get('description') %}
+                  <p class="mt-1 text-xs leading-relaxed text-neutral-500">{{ s.description }}</p>
+                  {% endif %}
+                  {% if s.get('price') %}
+                  <div class="mt-3 flex items-center justify-between gap-2 border-t border-white/15 pt-2 text-xs">
+                    <span class="text-neutral-400">قیمت خدمت</span>
+                    <span class="js-price font-semibold {{ pal.price }}" data-price="{{ s.get('price', '') }}">
+                      {{ s.get('price', '') }}
+                    </span>
+                  </div>
+                  {% endif %}
+                </div>
+              </div>
+            </label>
+            {% endfor %}
+          </div>
+          {% else %}
+          <p class="text-sm text-neutral-500">در این زیردسته هنوز خدمتی ثبت نشده.</p>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+      {% endif %}
+
+      {% if og.parent_only_services %}
+      <div class="overflow-hidden rounded-2xl border border-white/15 bg-gradient-to-br from-slate-800/40 to-slate-950/60">
+        <div class="border-b border-white/10 bg-gradient-to-l from-slate-600 to-slate-800 px-4 py-3">
+          <h4 class="text-base font-bold text-white">مستقیم زیر «{{ og.parent.name }}»</h4>
+          <p class="mt-0.5 text-xs text-slate-300">خدماتی که فقط به دستهٔ اصلی وصل‌اند (بدون زیردسته)</p>
+        </div>
+        <div class="p-4">
+          <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {% for s in og.parent_only_services %}
+            <label class="order-svc-card flex cursor-pointer flex-col rounded-xl border border-slate-500/30 bg-slate-900/40 p-3 hover:border-slate-400/50">
+              <div class="flex items-start gap-2">
+                <input type="checkbox" class="item-cb mt-1 h-4 w-4 shrink-0 rounded border-white/20 accent-slate-300" data-kind="service" data-id="{{ s.id }}" data-name="{{ s.name }}" data-price="{{ s.price or '' }}">
+                <div class="min-w-0 flex-1">
+                  <p class="font-semibold text-white">{{ s.name }}</p>
+                  {% set svc_terms = s.get('terms') or [] %}
+                  {% if svc_terms %}
+                  <ul class="mt-2 space-y-1.5">
+                    {% for term in svc_terms %}
+                    <li class="flex items-start gap-2 rounded-lg border border-slate-400/20 bg-slate-950/30 px-2 py-1 text-[11px] text-slate-200 shadow-[0_0_14px_rgba(148,163,184,0.18)]">
+                      <span class="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-slate-300 shadow-[0_0_10px_rgba(148,163,184,0.55)]"></span>
+                      <span class="min-w-0 break-words">{{ term }}</span>
+                    </li>
+                    {% endfor %}
+                  </ul>
+                  {% elif s.get('description') %}
+                  <p class="mt-1 text-xs text-neutral-500">{{ s.description }}</p>
+                  {% endif %}
+                  {% if s.get('price') %}
+                  <div class="mt-3 flex items-center justify-between gap-2 border-t border-slate-400/20 pt-2 text-xs">
+                    <span class="text-slate-400">قیمت خدمت</span>
+                    <span class="js-price font-semibold text-slate-200" data-price="{{ s.get('price', '') }}">
+                      {{ s.get('price', '') }}
+                    </span>
+                  </div>
+                  {% endif %}
+                </div>
+              </div>
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      {% if not og.child_sections and not og.parent_only_services %}
+      <p class="text-sm text-neutral-500">برای این دسته زیردسته یا خدمتی ثبت نشده.</p>
+      {% elif og.child_sections and not og.parent_only_services %}
+        {% set ns = namespace(any_svc=false) %}
+        {% for sec in og.child_sections %}
+          {% if sec.services %}{% set ns.any_svc = true %}{% endif %}
+        {% endfor %}
+        {% if not ns.any_svc %}
+      <p class="text-sm text-neutral-500">هنوز خدمتی در زیردسته‌ها ثبت نشده.</p>
+        {% endif %}
+      {% endif %}
+    </section>
+    {% endfor %}
+
+    <section id="plans-tab" class="tab-panel hidden rounded-2xl border border-white/10 bg-gradient-to-b from-slate-950/80 via-black/50 to-black/80 p-5 backdrop-blur-md">
+      <div class="mb-5 flex flex-wrap items-end justify-between gap-2 border-b border-white/10 pb-4">
+        <h3 class="bg-gradient-to-l from-white via-fuchsia-200 to-cyan-300 bg-clip-text text-lg font-black text-transparent">پلن‌ها</h3>
+       
+      </div>
+      <div class="grid grid-cols-1 justify-items-center gap-8 sm:grid-cols-2 xl:grid-cols-3">
+        {% for p in plans %}
+        {% set pp = plan_palettes[loop.index0 % (plan_palettes|length)] %}
+        {% set p_sids = p.get('service_ids') or [] %}
+        <label class="plan-neon-card order-svc-card group flex w-full max-w-[17.5rem] cursor-pointer flex-col overflow-hidden rounded-2xl border-2 {{ pp.border }} {{ pp.bg }} ring-1 {{ pp.ring }} {{ pp.shadow }} {{ pp.hover_shadow }}">
+          <div class="relative flex shrink-0 items-start gap-3 p-4 pb-3">
+            <input type="checkbox" class="item-cb mt-1.5 h-4 w-4 shrink-0 rounded border-white/40 {{ pp.accent }}" data-kind="plan" data-id="{{ p.id }}" data-name="{{ p.name }}" data-price="{{ p.get('price', '') }}">
+            <div class="min-w-0 flex-1 text-right">
+              <p class="text-base font-black leading-tight text-white drop-shadow-[0_0_12px_rgba(255,255,255,0.15)]">{{ p.name }}</p>
+              <p class="mt-1.5 text-[11px] font-medium leading-relaxed text-neutral-400">تیک بزنید تا همهٔ خدمات این پلن به سفارش اضافه شوند.</p>
+            </div>
+          </div>
+          <div class="mx-4 h-px shrink-0 bg-gradient-to-l from-transparent {{ pp.line }} to-transparent opacity-90"></div>
+          <div class="plan-service-scroll min-h-[9.5rem] flex-1 overflow-y-auto px-3 py-3">
+            {% if p_sids %}
+            <p class="mb-2 text-[10px] font-bold uppercase tracking-wider text-neutral-500">خدمات پلن</p>
+            <ul class="space-y-2">
+              {% for sid in p_sids %}
+              {% set svc = service_by_id.get(sid) %}
+              <li class="flex items-start gap-2.5 rounded-xl border border-white/10 bg-black/35 px-2.5 py-2 backdrop-blur-sm transition group-hover:border-white/15">
+                <span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full {{ pp.dot }}"></span>
+                <div class="min-w-0 flex-1 text-right">
+                  <span class="block text-sm font-semibold leading-snug text-neutral-100">{% if svc %}{{ svc.get('name', '') or '—' }}{% else %}شناسه: {{ (sid|string)[:8] }}{% if (sid|string)|length > 8 %}…{% endif %}{% endif %}</span>
+                </div>
+              </li>
+              {% endfor %}
+            </ul>
+            {% else %}
+            <div class="flex h-full min-h-[8rem] flex-col items-center justify-center rounded-xl border border-dashed border-white/15 bg-black/25 px-3 py-6 text-center">
+              <p class="text-xs text-neutral-500">هنوز خدمتی به این پلن وصل نشده.</p>
+            </div>
+            {% endif %}
+          </div>
+          <div class="shrink-0 border-t border-white/10 bg-black/30 px-3 py-2.5">
+            {% set plan_price = (p.get('price') or '')|replace(',', '٬') %}
+            <div class="flex items-center justify-between gap-2 text-xs">
+              <span class="font-semibold {{ pp.foot }}">پلن نئونی — {{ p_sids|length }} خدمت</span>
+              {% if plan_price %}
+              <span class="js-price font-bold {{ pp.price }}" data-price="{{ p.get('price', '') }}">
+                {{ p.get('price', '') }}
+              </span>
+              {% else %}
+              <span class="font-semibold text-neutral-500">بدون قیمت</span>
+              {% endif %}
+            </div>
+          </div>
+        </label>
+        {% endfor %}
+        {% if not plans %}
+        <p class="col-span-full text-sm text-neutral-500">پلنی برای انتخاب وجود ندارد.</p>
+        {% endif %}
+      </div>
+    </section>
+
+    <section class="mt-6 rounded-2xl border border-white/10 bg-black/35 p-5 backdrop-blur-md">
+      <h2 class="mb-3 text-base font-bold text-white">اطلاعات مشتری</h2>
+      <div class="grid gap-3 md:grid-cols-3">
+        <input id="customer-name" type="text" class="rounded-xl border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-white placeholder:text-neutral-600 focus:border-fuchsia-500/50 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/20" placeholder="نام مشتری (اجباری)">
+        <input id="customer-phone" type="text" class="rounded-xl border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-white placeholder:text-neutral-600 focus:border-sky-500/50 focus:outline-none focus:ring-2 focus:ring-sky-500/20" placeholder="شماره تماس">
+        <input id="customer-address" type="text" class="rounded-xl border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-white placeholder:text-neutral-600 focus:border-amber-500/50 focus:outline-none focus:ring-2 focus:ring-amber-500/20" placeholder="آدرس">
+      </div>
+      <div class="mt-4 rounded-xl border border-white/10 bg-black/25 p-4">
+        <p class="mb-2 text-xs font-semibold text-neutral-400">نوع فاکتور (پس از ثبت، با دکمهٔ «چاپ فاکتور» PDF ساخته می‌شود)</p>
+        <div class="flex flex-wrap gap-4 text-sm text-neutral-200">
+          <label class="flex cursor-pointer items-center gap-2"><input type="radio" name="invoice-type" value="current" class="accent-fuchsia-500" checked><span>فاکتور فعلی</span></label>
+          <label class="flex cursor-pointer items-center gap-2"><input type="radio" name="invoice-type" value="roadmap" class="accent-amber-500"><span>فاکتور رودمپی</span></label>
+        </div>
+      </div>
+      <div class="mt-4">
+        <button id="submit-order" type="button" class="rounded-xl bg-gradient-to-l from-fuchsia-600 via-rose-500 to-amber-500 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-fuchsia-500/25 transition hover:brightness-110">ثبت سفارش</button>
+      </div>
+      <p id="order-message" class="mt-3 text-sm text-neutral-400"></p>
+    </section>
+  </main>
+
+  <div id="prefactor-backdrop" class="fixed inset-0 z-[90] hidden items-center justify-center bg-black/75 p-4 backdrop-blur-sm" onclick="if(event.target===this) closePrefactor()">
+    <div class="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-white/15 bg-neutral-950/95 p-6 shadow-2xl" onclick="event.stopPropagation()" dir="rtl">
+      <h3 class="mb-1 text-lg font-bold text-white">پیش‌فاکتور</h3>
+      <p class="mb-4 text-xs text-neutral-500">موارد زیر پس از تأیید ذخیره می‌شود. PDF فاکتور پس از ثبت با دکمهٔ «چاپ فاکتور» ساخته می‌شود.</p>
+      <div id="prefactor-body" class="mb-6 space-y-4 text-sm text-neutral-200"></div>
+      <div class="flex flex-wrap justify-end gap-2 border-t border-white/10 pt-4">
+        <button type="button" id="prefactor-cancel" class="rounded-xl border border-white/15 px-4 py-2 text-sm text-neutral-300 hover:bg-white/5">انصراف</button>
+        <button type="button" id="prefactor-confirm" class="rounded-xl bg-gradient-to-l from-emerald-600 to-teal-600 px-4 py-2 text-sm font-bold text-white shadow-lg shadow-emerald-900/30">تایید و صدور فاکتور</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="post-order-backdrop" class="fixed inset-0 z-[93] hidden items-center justify-center bg-black/75 p-4 backdrop-blur-sm" onclick="if(event.target===this) closePostOrderModal()">
+    <div class="w-full max-w-md rounded-2xl border border-white/15 bg-neutral-950/95 p-6 shadow-2xl" onclick="event.stopPropagation()" dir="rtl">
+      <h3 class="mb-1 text-lg font-bold text-white">سفارش ثبت شد</h3>
+      <p id="post-order-text" class="mb-4 text-sm text-neutral-300"></p>
+      <p id="post-order-invoice-hint" class="mb-4 rounded-xl border border-white/10 bg-black/35 px-3 py-2 text-xs text-neutral-500"></p>
+      <div class="flex flex-wrap justify-end gap-2">
+        <button type="button" id="post-order-later" class="rounded-xl border border-white/15 px-4 py-2 text-sm text-neutral-300 hover:bg-white/5">بستن</button>
+        <button type="button" id="btn-issue-invoice" class="rounded-xl bg-gradient-to-l from-emerald-600 to-teal-600 px-4 py-2 text-sm font-bold text-white shadow-lg shadow-emerald-900/30">چاپ فاکتور (PDF)</button>
+      </div>
+      <p id="post-order-issue-msg" class="mt-3 text-xs text-rose-300"></p>
+    </div>
+  </div>
+
+  <div id="receipt-backdrop" class="fixed inset-0 z-[91] hidden items-center justify-center bg-black/75 p-4 backdrop-blur-sm" onclick="if(event.target===this) closeReceiptPrompt()">
+    <div class="w-full max-w-md rounded-2xl border border-white/15 bg-neutral-950/95 p-6 shadow-2xl" onclick="event.stopPropagation()" dir="rtl">
+      <h3 class="mb-1 text-lg font-bold text-white">فاکتور آماده است</h3>
+      <p class="mb-3 text-sm text-neutral-300">فاکتور با موفقیت ساخته شد. مایل هستید الان PDF فاکتور باز شود؟</p>
+      <p id="receipt-path-hint" class="mb-4 rounded-xl border border-white/10 bg-black/35 px-3 py-2 text-xs text-neutral-400"></p>
+      <div class="flex flex-wrap justify-end gap-2">
+        <button type="button" id="receipt-close" class="rounded-xl border border-white/15 px-4 py-2 text-sm text-neutral-300 hover:bg-white/5">بعدا</button>
+        <button type="button" id="receipt-open" class="rounded-xl bg-gradient-to-l from-indigo-600 to-cyan-600 px-4 py-2 text-sm font-bold text-white shadow-lg shadow-cyan-900/30">باز کردن فاکتور</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="custom-order-backdrop" class="fixed inset-0 z-[92] hidden items-center justify-center bg-black/75 p-4 backdrop-blur-sm" onclick="if(event.target===this) closeCustomOrderModal()">
+    <div class="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-violet-400/25 bg-neutral-950/95 p-5 shadow-2xl md:p-6" onclick="event.stopPropagation()" dir="rtl">
+      <div class="mb-4 flex flex-wrap items-start justify-between gap-2 border-b border-white/10 pb-3">
+        <div>
+          <h3 class="text-lg font-bold text-white">سفارش سفارشی</h3>
+          <p class="mt-1 text-xs text-neutral-500">تعداد مراحل را بزنید؛ در توضیحات هر خط یک مفاد جدا محسوب می‌شود. این سفارش در دیتابیس custom-order ذخیره می‌شود.</p>
+        </div>
+        <button type="button" id="custom-order-close-x" class="shrink-0 rounded-lg border border-white/10 px-2 py-1 text-xs text-neutral-400 hover:bg-white/5">بستن</button>
+      </div>
+
+      <div class="mb-5 rounded-xl border border-white/10 bg-black/35 p-4">
+        <p class="mb-2 text-xs font-semibold text-neutral-400">نوع فاکتور</p>
+        <div class="flex flex-wrap gap-4 text-sm text-neutral-200">
+          <label class="flex cursor-pointer items-center gap-2"><input type="radio" name="custom-invoice-type" value="panel" class="accent-fuchsia-500" checked><span>فاکتور پنلی</span></label>
+          <label class="flex cursor-pointer items-center gap-2"><input type="radio" name="custom-invoice-type" value="simple" class="accent-sky-500"><span>فاکتور ساده</span></label>
+          <label class="flex cursor-pointer items-center gap-2"><input type="radio" name="custom-invoice-type" value="roadmap" class="accent-amber-500"><span>فاکتور رودمپی</span></label>
+        </div>
+      </div>
+
+      <div id="custom-panel-workflow" class="mb-5 space-y-3 rounded-xl border border-fuchsia-500/30 bg-fuchsia-950/15 p-4">
+        <h4 class="text-sm font-bold text-white">پلن‌های فاکتور پنلی</h4>
+        <p class="text-xs text-neutral-400">نوع پلن، قیمت و خدمات (هر خط یک خدمت — با جستجوی Ajax).</p>
+        <div id="custom-panel-plans-container" class="space-y-4"></div>
+        <button type="button" id="btn-custom-add-panel-plan" class="rounded-xl border border-fuchsia-400/40 bg-fuchsia-500/20 px-4 py-2 text-sm font-semibold text-fuchsia-100 hover:bg-fuchsia-500/30">افزودن پلن</button>
+        <p class="text-sm font-semibold text-emerald-200">جمع برآوردی: <span id="custom-panel-plans-total">۰ تومان</span></p>
+      </div>
+      <div id="custom-steps-workflow" class="hidden">
+      <div class="mb-5 rounded-xl border border-white/10 bg-black/35 p-4">
+        <label class="mb-2 block text-xs font-semibold text-neutral-400">تعداد مراحل سفارش</label>
+        <div class="flex flex-wrap items-end gap-2">
+          <input id="custom-step-count" type="number" min="1" max="50" value="1" class="w-28 rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white focus:border-violet-500/50 focus:outline-none focus:ring-2 focus:ring-violet-500/20">
+          <button type="button" id="btn-custom-apply-steps" class="rounded-xl bg-violet-600/80 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-600">اعمال تعداد مراحل</button>
+        </div>
+      </div>
+
+      <div id="custom-steps-container" class="mb-5 space-y-4"></div>
+      </div>
+
+      <div id="custom-simple-workflow" class="hidden mb-5 space-y-3 rounded-xl border border-sky-500/30 bg-sky-950/20 p-4">
+        <h4 class="text-sm font-bold text-white">خدمات فاکتور ساده</h4>
+        <p class="text-xs text-neutral-400">نام، قیمت واحد (تومان)، تعداد و توضیحات برای هر ردیف. جمع = قیمت واحد × تعداد.</p>
+        <div id="custom-simple-lines-rows" class="space-y-3"></div>
+        <button type="button" id="btn-custom-add-simple-line" class="rounded-xl border border-sky-400/40 bg-sky-500/20 px-4 py-2 text-sm font-semibold text-sky-100 hover:bg-sky-500/30">افزودن ردیف خدمت</button>
+        <p class="text-sm font-semibold text-emerald-200">جمع برآوردی: <span id="custom-simple-lines-total">۰ تومان</span></p>
+      </div>
+
+      <div class="mb-5 rounded-xl border border-white/10 bg-black/35 p-4">
+        <h4 class="mb-3 text-sm font-bold text-white">اطلاعات مشتری</h4>
+        <div class="grid gap-3 md:grid-cols-3">
+          <div class="svc-ac-wrap">
+            <input id="custom-cust-name" type="text" autocomplete="off" data-customer-id="" class="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-white placeholder:text-neutral-600 focus:border-fuchsia-500/50 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/20" placeholder="نام مشتری (اجباری)">
+            <ul id="custom-cust-ac-list" class="svc-ac-list hidden"></ul>
+          </div>
+          <input id="custom-cust-phone" type="text" class="rounded-xl border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-white placeholder:text-neutral-600 focus:border-sky-500/50 focus:outline-none focus:ring-2 focus:ring-sky-500/20" placeholder="شماره تماس">
+          <input id="custom-cust-address" type="text" class="rounded-xl border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-white placeholder:text-neutral-600 focus:border-amber-500/50 focus:outline-none focus:ring-2 focus:ring-amber-500/20" placeholder="آدرس">
+        </div>
+      </div>
+
+      <p id="custom-order-message" class="mb-3 text-sm text-neutral-400"></p>
+      <div class="flex flex-wrap justify-end gap-2 border-t border-white/10 pt-4">
+        <button type="button" id="btn-custom-order-cancel" class="rounded-xl border border-white/15 px-4 py-2 text-sm text-neutral-300 hover:bg-white/5">انصراف</button>
+        <button type="button" id="btn-custom-order-submit" class="rounded-xl bg-gradient-to-l from-violet-600 to-fuchsia-600 px-4 py-2 text-sm font-bold text-white shadow-lg shadow-violet-900/30">تایید و ثبت سفارش</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="application/json" id="checkout-catalog-json">{{ checkout_catalog | tojson }}</script>
+
+  <script>
+    var CHECKOUT = { services: [], plans: [] };
+    try {
+      CHECKOUT = JSON.parse(document.getElementById('checkout-catalog-json').textContent);
+    } catch (e) { CHECKOUT = { services: [], plans: [] }; }
+
+    var pendingOrderPayload = null;
+    var pendingReceiptUrl = '';
+    var pendingIssue = { orderId: '', source: '' };
+
+    function invoiceTypeLabel(v) {
+      if (v === 'simple') return 'فاکتور ساده';
+      if (v === 'roadmap') return 'فاکتور رودمپی';
+      if (v === 'panel') return 'فاکتور پنلی';
+      return 'فاکتور فعلی';
+    }
+
+    var PANEL_TIER_OPTIONS = [
+      { value: 'economic', label: 'اقتصادی' },
+      { value: 'bronze', label: 'برنزی' },
+      { value: 'silver', label: 'نقره\u200cای' },
+      { value: 'gold', label: 'طلایی' },
+      { value: 'diamond', label: 'الماسی' },
+      { value: 'exclusive', label: 'اختصاصی (قیمت توافقی)' }
+    ];
+    var svcSearchTimer = null;
+    var custSearchTimer = null;
+
+    function getInvoiceType() {
+      var r = document.querySelector('input[name="invoice-type"]:checked');
+      return r ? r.value : 'current';
+    }
+
+    function getCustomInvoiceType() {
+      var r = document.querySelector('input[name="custom-invoice-type"]:checked');
+      return r ? r.value : 'current';
+    }
+
+    function openPostOrderModal(orderId, source, invoiceType) {
+      pendingIssue.orderId = orderId || '';
+      pendingIssue.source = source || '';
+      var bd = document.getElementById('post-order-backdrop');
+      var t = document.getElementById('post-order-text');
+      var h = document.getElementById('post-order-invoice-hint');
+      var m = document.getElementById('post-order-issue-msg');
+      if (m) m.textContent = '';
+      if (t) t.textContent = 'شناسه سفارش: ' + (orderId || '');
+      if (h) {
+        h.textContent = 'نوع فاکتور انتخاب‌شده: ' + invoiceTypeLabel(invoiceType) + ' — برای ساخت و باز کردن PDF روی «چاپ فاکتور» بزنید.';
+      }
+      if (!bd) return;
+      bd.classList.remove('hidden');
+      bd.classList.add('flex');
+    }
+
+    function closePostOrderModal() {
+      var bd = document.getElementById('post-order-backdrop');
+      if (!bd) return;
+      bd.classList.add('hidden');
+      bd.classList.remove('flex');
+      pendingIssue.orderId = '';
+      pendingIssue.source = '';
+    }
+
+    function parsePriceAmount(value) {
+      if (!value) return 0;
+      var text = String(value);
+      var persian = '۰۱۲۳۴۵۶۷۸۹';
+      for (var i = 0; i < persian.length; i += 1) {
+        text = text.replace(new RegExp(persian[i], 'g'), String(i));
+      }
+      var digits = text.replace(/\D/g, '');
+      return digits ? parseInt(digits, 10) : 0;
+    }
+
+    function formatToman(amount) {
+      var text = String(amount).replace(/\B(?=(\d{3})+(?!\d))/g, '\u066C');
+      var persianDigits = '۰۱۲۳۴۵۶۷۸۹';
+      text = text.replace(/\d/g, function (d) { return persianDigits[d]; });
+      return text + ' تومان';
+    }
+
+    function refreshStaticPriceLabels() {
+      document.querySelectorAll('.js-price').forEach(function (el) {
+        var raw = el.getAttribute('data-price') || '';
+        var amount = parsePriceAmount(raw);
+        if (amount > 0 || String(raw).trim()) {
+          el.textContent = formatToman(amount);
+        }
+      });
+    }
+
+    function escapeHtml(t) {
+      var d = document.createElement('div');
+      d.textContent = t;
+      return d.innerHTML;
+    }
+
+    function getSelectionIds() {
+      var serviceIds = [];
+      var planIds = [];
+      document.querySelectorAll('.item-cb:checked').forEach(function (cb) {
+        if (cb.dataset.kind === 'plan') planIds.push(cb.dataset.id);
+        else serviceIds.push(cb.dataset.id);
+      });
+      return { service_ids: serviceIds, plan_ids: planIds };
+    }
+
+    function serviceById(sid) {
+      return (CHECKOUT.services || []).find(function (x) { return x.id === sid; });
+    }
+
+    function planById(pid) {
+      return (CHECKOUT.plans || []).find(function (x) { return x.id === pid; });
+    }
+
+    function selectedTotalAmount(sel) {
+      var serviceTotal = (sel.service_ids || []).reduce(function (sum, id) {
+        var s = serviceById(id);
+        return sum + (s && s.amount ? s.amount : 0);
+      }, 0);
+      var planTotal = (sel.plan_ids || []).reduce(function (sum, id) {
+        var p = planById(id);
+        return sum + (p && p.amount ? p.amount : 0);
+      }, 0);
+      return serviceTotal + planTotal;
+    }
+
+    function updateCart() {
+      var cartItems = document.getElementById('cart-items');
+      var totalEl = document.getElementById('cart-total');
+      if (!cartItems || !totalEl) return;
+
+      var sel = getSelectionIds();
+      var total = selectedTotalAmount(sel);
+
+      if (!(sel.service_ids && sel.service_ids.length) && !(sel.plan_ids && sel.plan_ids.length)) {
+        cartItems.innerHTML = '<li class="text-neutral-500">هنوز موردی انتخاب نشده است.</li>';
+        totalEl.textContent = formatToman(0);
+        return;
+      }
+
+      var html = '';
+      if (sel.plan_ids && sel.plan_ids.length) {
+        sel.plan_ids.forEach(function (pid) {
+          var pl = planById(pid);
+          if (!pl) return;
+          html += '<li class="flex items-center justify-between gap-2 rounded-xl border border-cyan-500/35 bg-cyan-950/25 px-3 py-2 text-xs text-cyan-100/90">' +
+            '<span>پلن: ' + escapeHtml(pl.name || pid) + '</span>' +
+            '<span class="shrink-0 text-cyan-200">' + formatToman(pl.amount || 0) + '</span></li>';
+        });
+      }
+      (sel.service_ids || []).forEach(function (sid) {
+        var s = serviceById(sid);
+        if (!s) return;
+        var amt = s.amount || 0;
+        html += '<li class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 backdrop-blur-sm">' +
+          '<span class="text-neutral-200">' + escapeHtml(s.name || '') + '</span>' +
+          '<span class="text-amber-300">' + formatToman(amt) + '</span></li>';
+      });
+      cartItems.innerHTML = html;
+      totalEl.textContent = formatToman(total);
+    }
+
+    function openPrefactor() {
+      var bd = document.getElementById('prefactor-backdrop');
+      if (!bd) return;
+      bd.classList.remove('hidden');
+      bd.classList.add('flex');
+    }
+
+    function closePrefactor() {
+      var bd = document.getElementById('prefactor-backdrop');
+      if (!bd) return;
+      bd.classList.add('hidden');
+      bd.classList.remove('flex');
+      pendingOrderPayload = null;
+    }
+
+    function openReceiptPrompt(receiptUrl, receiptPath) {
+      var bd = document.getElementById('receipt-backdrop');
+      var hint = document.getElementById('receipt-path-hint');
+      if (!bd || !hint) return;
+      pendingReceiptUrl = receiptUrl || '';
+      hint.textContent = receiptPath ? ('مسیر فایل: ' + receiptPath) : 'فایل فاکتور آماده است.';
+      bd.classList.remove('hidden');
+      bd.classList.add('flex');
+    }
+
+    function closeReceiptPrompt() {
+      var bd = document.getElementById('receipt-backdrop');
+      if (!bd) return;
+      bd.classList.add('hidden');
+      bd.classList.remove('flex');
+      pendingReceiptUrl = '';
+    }
+
+    function openCustomOrderModal() {
+      var bd = document.getElementById('custom-order-backdrop');
+      if (!bd) return;
+      var om = document.getElementById('custom-order-message');
+      if (om) om.textContent = '';
+      bd.classList.remove('hidden');
+      bd.classList.add('flex');
+      if (isCustomRoadmapInvoiceMode()) applyCustomStepCount(true);
+      syncCustomModalInvoiceUi();
+    }
+
+    function closeCustomOrderModal() {
+      var bd = document.getElementById('custom-order-backdrop');
+      if (!bd) return;
+      bd.classList.add('hidden');
+      bd.classList.remove('flex');
+    }
+
+    function applyCustomStepCount(silent) {
+      var countEl = document.getElementById('custom-step-count');
+      var msg = document.getElementById('custom-order-message');
+      var cont = document.getElementById('custom-steps-container');
+      if (!countEl || !cont) return;
+      var n = parseInt(countEl.value, 10);
+      if (isNaN(n) || n < 1) {
+        if (!silent && msg) msg.textContent = 'تعداد مراحل باید حداقل ۱ باشد.';
+        return;
+      }
+      if (n > 50) {
+        if (!silent && msg) msg.textContent = 'حداکثر ۵۰ مرحله مجاز است.';
+        return;
+      }
+      if (msg) msg.textContent = '';
+      var html = '';
+      for (var i = 0; i < n; i += 1) {
+        var num = String(i + 1);
+        html += '<div class="custom-step-block rounded-xl border border-violet-500/30 bg-violet-950/20 p-4 shadow-inner">' +
+          '<p class="mb-3 text-xs font-bold text-violet-200">مرحله ' + escapeHtml(num) + '</p>' +
+          '<div class="grid gap-3 md:grid-cols-2">' +
+          '<div><label class="mb-1 block text-[11px] text-neutral-500">عنوان</label><input type="text" class="custom-step-title w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white placeholder:text-neutral-600" placeholder="عنوان مرحله"></div>' +
+          '<div><label class="mb-1 block text-[11px] text-neutral-500">نام</label><input type="text" class="custom-step-name w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white placeholder:text-neutral-600" placeholder="نام مرحله"></div></div>' +
+          '<div class="mt-3"><label class="mb-1 block text-[11px] text-neutral-500">توضیحات (هر خط یک مورد)</label><textarea rows="4" class="custom-step-desc w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white placeholder:text-neutral-600" placeholder="هر خط یک مفاد جدا"></textarea></div>' +
+          '<div class="mt-3 md:max-w-xs"><label class="mb-1 block text-[11px] text-neutral-500">قیمت</label><input type="text" class="custom-step-price w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white placeholder:text-neutral-600" placeholder="مثلاً ۱۰٬۰۰۰٬۰۰۰"></div></div>';
+      }
+      cont.innerHTML = html;
+    }
+
+    function buildPrefactorHtml(payload, total) {
+      var cust = payload.customer || {};
+      var lines = '';
+      lines += '<div class="rounded-xl border border-white/10 bg-black/40 p-3">';
+      lines += '<p class="mb-2 text-xs font-semibold text-neutral-400">مشتری</p>';
+      lines += '<p class="font-medium text-white">' + escapeHtml(cust.name || '') + '</p>';
+      if (cust.phone) lines += '<p class="mt-1 text-xs text-neutral-400">تماس: ' + escapeHtml(cust.phone) + '</p>';
+      if (cust.address) lines += '<p class="mt-1 text-xs text-neutral-400">آدرس: ' + escapeHtml(cust.address) + '</p>';
+      lines += '</div>';
+      lines += '<div class="rounded-xl border border-white/10 bg-black/40 p-3">';
+      lines += '<p class="mb-2 text-xs font-semibold text-neutral-400">اقلام قابل صدور در فاکتور</p><ul class="space-y-2">';
+      var hasRows = false;
+      (payload.service_ids || []).forEach(function (sid) {
+          var s = serviceById(sid);
+          if (!s) return;
+          hasRows = true;
+          lines += '<li class="flex justify-between gap-2 border-b border-white/5 pb-2 last:border-0 last:pb-0"><span>' + escapeHtml(s.name || '') + '</span><span class="shrink-0 text-emerald-300">' + formatToman(s.amount || 0) + '</span></li>';
+      });
+      (payload.plan_ids || []).forEach(function (pid) {
+        var pl = planById(pid);
+        if (!pl) return;
+        hasRows = true;
+        lines += '<li class="flex justify-between gap-2 border-b border-white/5 pb-2 last:border-0 last:pb-0"><span>پلن: ' + escapeHtml(pl.name || pid) + '</span><span class="shrink-0 text-cyan-300">' + formatToman(pl.amount || 0) + '</span></li>';
+      });
+      if (!hasRows) lines += '<li class="text-neutral-500">آیتمی برای محاسبه وجود ندارد.</li>';
+      lines += '</ul></div>';
+      if (payload.plan_ids && payload.plan_ids.length) {
+        var pnames = payload.plan_ids.map(function (pid) {
+          var pl = planById(pid);
+          return pl ? pl.name : pid;
+        });
+        lines += '<p class="text-xs text-neutral-500">پلن\u200cهای انتخابی: ' + escapeHtml(pnames.join('، ')) + '</p>';
+      }
+      lines += '<div class="flex items-center justify-between rounded-xl border border-emerald-500/30 bg-emerald-950/20 px-3 py-2"><span class="font-semibold text-white">جمع کل</span><span class="text-lg font-bold text-emerald-300">' + formatToman(total) + '</span></div>';
+      return lines;
+    }
+
+    function isCustomSimpleInvoiceMode() {
+      return getCustomInvoiceType() === 'simple';
+    }
+
+    function isCustomPanelInvoiceMode() {
+      return getCustomInvoiceType() === 'panel';
+    }
+
+    function isCustomRoadmapInvoiceMode() {
+      return getCustomInvoiceType() === 'roadmap';
+    }
+
+    function syncCustomModalInvoiceUi() {
+      var panel = isCustomPanelInvoiceMode();
+      var simple = isCustomSimpleInvoiceMode();
+      var roadmap = isCustomRoadmapInvoiceMode();
+      var wf = document.getElementById('custom-steps-workflow');
+      var pw = document.getElementById('custom-panel-workflow');
+      var sw = document.getElementById('custom-simple-workflow');
+      if (wf) wf.classList.toggle('hidden', !roadmap);
+      if (pw) pw.classList.toggle('hidden', !panel);
+      if (sw) sw.classList.toggle('hidden', !simple);
+      if (simple) {
+        var cont = document.getElementById('custom-simple-lines-rows');
+        if (cont && !cont.children.length) addCustomSimpleLineRow();
+        updateCustomSimpleLinesTotal();
+      }
+      if (panel) {
+        var pc = document.getElementById('custom-panel-plans-container');
+        if (pc && !pc.children.length) addCustomPanelPlanBlock();
+        updateCustomPanelPlansTotal();
+      }
+    }
+
+    function panelTierSelectHtml(selected) {
+      var h = '';
+      PANEL_TIER_OPTIONS.forEach(function (o) {
+        h += '<option value="' + escapeHtml(o.value) + '"' + (o.value === selected ? ' selected' : '') + '>' + escapeHtml(o.label) + '</option>';
+      });
+      return h;
+    }
+
+    function onPanelTierChange(block) {
+      var sel = block.querySelector('.panel-plan-tier');
+      var priceIn = block.querySelector('.panel-plan-price');
+      if (!sel || !priceIn) return;
+      var ex = sel.value === 'exclusive';
+      priceIn.disabled = ex;
+      priceIn.placeholder = ex ? 'قیمت توافقی' : 'مثلاً ۱۲٬۹۰۰٬۰۰۰';
+      if (ex) priceIn.value = '';
+      updateCustomPanelPlansTotal();
+    }
+
+    function addCustomPanelServiceRow(planBlock) {
+      var list = planBlock.querySelector('.panel-plan-services-list');
+      if (!list) return;
+      var row = document.createElement('div');
+      row.className = 'panel-svc-row flex gap-2 items-start';
+      row.innerHTML = '<motion class="svc-ac-wrap flex-1"><input type="text" class="panel-svc-input w-full rounded-lg border border-white/10 bg-black/40 px-2 py-2 text-sm text-white" placeholder="نام خدمت" autocomplete="off" data-service-id=""><ul class="svc-ac-list hidden"></ul></motion><button type="button" class="btn-remove-panel-svc shrink-0 rounded-lg border border-rose-500/40 px-2 py-2 text-xs text-rose-200 hover:bg-rose-500/20">حذف</button>'.replace(/motion/g, 'div');
+      list.appendChild(row);
+      bindServiceAutocomplete(row.querySelector('.panel-svc-input'));
+    }
+
+    function addCustomPanelPlanBlock() {
+      var cont = document.getElementById('custom-panel-plans-container');
+      if (!cont) return;
+      var block = document.createElement('div');
+      block.className = 'custom-panel-plan-block rounded-xl border border-fuchsia-500/25 bg-black/30 p-4 space-y-3';
+      block.innerHTML = '<motion class="flex flex-wrap items-end justify-between gap-2"><div class="min-w-[10rem]"><label class="mb-1 block text-[11px] text-neutral-500">نوع پلن</label><select class="panel-plan-tier w-full rounded-lg border border-white/10 bg-black/40 px-2 py-2 text-sm text-white">' + panelTierSelectHtml('bronze') + '</select></div><div class="min-w-[10rem] flex-1"><label class="mb-1 block text-[11px] text-neutral-500">قیمت پلن (تومان)</label><input type="text" class="panel-plan-price w-full rounded-lg border border-white/10 bg-black/40 px-2 py-2 text-sm text-white" placeholder="مثلاً ۱۲٬۹۰۰٬۰۰۰"></div><button type="button" class="btn-remove-panel-plan rounded-lg border border-rose-500/40 px-3 py-2 text-xs text-rose-200 hover:bg-rose-500/20">حذف پلن</button></motion><div><label class="mb-1 block text-[11px] text-neutral-500">خدمات پلن (هر ردیف یک خدمت)</label><div class="panel-plan-services-list space-y-2"></div><button type="button" class="btn-add-panel-svc mt-2 rounded-lg border border-white/15 px-3 py-1 text-xs text-neutral-300 hover:bg-white/5">افزودن خدمت</button></div>';
+      block.innerHTML = block.innerHTML.replace(/motion/g, 'div');
+      cont.appendChild(block);
+      var tierSel = block.querySelector('.panel-plan-tier');
+      if (tierSel) tierSel.addEventListener('change', function () { onPanelTierChange(block); });
+      block.querySelector('.panel-plan-price').addEventListener('input', updateCustomPanelPlansTotal);
+      addCustomPanelServiceRow(block);
+      onPanelTierChange(block);
+    }
+
+    function updateCustomPanelPlansTotal() {
+      var el = document.getElementById('custom-panel-plans-total');
+      if (!el) return;
+      var sum = 0;
+      document.querySelectorAll('.custom-panel-plan-block').forEach(function (block) {
+        var tier = block.querySelector('.panel-plan-tier');
+        if (tier && tier.value === 'exclusive') return;
+        var p = block.querySelector('.panel-plan-price');
+        sum += parsePriceAmount(p && p.value ? p.value : '');
+      });
+      el.textContent = formatToman(sum);
+    }
+
+    function hideSvcAcList(input) {
+      var ul = input && input.parentElement && input.parentElement.querySelector('.svc-ac-list');
+      if (ul) ul.classList.add('hidden');
+    }
+
+    function hideCustAcList() {
+      var ul = document.getElementById('custom-cust-ac-list');
+      if (ul) ul.classList.add('hidden');
+    }
+
+    function bindCustomerAutocomplete() {
+      var input = document.getElementById('custom-cust-name');
+      if (!input || input.dataset.custAcBound === '1') return;
+      input.dataset.custAcBound = '1';
+      var phoneEl = document.getElementById('custom-cust-phone');
+      var addrEl = document.getElementById('custom-cust-address');
+      input.addEventListener('input', function () {
+        input.dataset.customerId = '';
+        var q = (input.value || '').trim();
+        clearTimeout(custSearchTimer);
+        if (q.length < 1) { hideCustAcList(); return; }
+        custSearchTimer = setTimeout(function () {
+          fetch('{{ url_for("api_customers_search") }}?q=' + encodeURIComponent(q) + '&limit=12')
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+              var ul = document.getElementById('custom-cust-ac-list');
+              if (!ul) return;
+              ul.innerHTML = '';
+              var items = (data && data.items) ? data.items : [];
+              if (!items.length) {
+                ul.classList.add('hidden');
+                return;
+              }
+              items.forEach(function (it) {
+                var li = document.createElement('li');
+                li.className = 'svc-ac-item';
+                var sub = [it.phone, it.address].filter(Boolean).join(' — ');
+                li.textContent = sub ? it.name + ' (' + sub + ')' : it.name;
+                li.dataset.id = it.id;
+                li.dataset.name = it.name;
+                li.dataset.phone = it.phone || '';
+                li.dataset.address = it.address || '';
+                li.addEventListener('mousedown', function (e) {
+                  e.preventDefault();
+                  input.value = it.name;
+                  input.dataset.customerId = it.id;
+                  if (phoneEl) phoneEl.value = it.phone || '';
+                  if (addrEl) addrEl.value = it.address || '';
+                  hideCustAcList();
+                });
+                ul.appendChild(li);
+              });
+              ul.classList.remove('hidden');
+            })
+            .catch(function () { hideCustAcList(); });
+        }, 220);
+      });
+      input.addEventListener('blur', function () {
+        setTimeout(hideCustAcList, 180);
+      });
+    }
+
+    function bindServiceAutocomplete(input) {
+      if (!input || input.dataset.acBound === '1') return;
+      input.dataset.acBound = '1';
+      input.addEventListener('input', function () {
+        input.dataset.serviceId = '';
+        var q = (input.value || '').trim();
+        clearTimeout(svcSearchTimer);
+        if (q.length < 1) { hideSvcAcList(input); return; }
+        svcSearchTimer = setTimeout(function () {
+          fetch('{{ url_for("api_services_search") }}?q=' + encodeURIComponent(q) + '&limit=12')
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+              var ul = input.parentElement.querySelector('.svc-ac-list');
+              if (!ul) return;
+              ul.innerHTML = '';
+              var items = (data && data.items) ? data.items : [];
+              if (!items.length) {
+                ul.classList.add('hidden');
+                return;
+              }
+              items.forEach(function (it) {
+                var li = document.createElement('li');
+                li.className = 'svc-ac-item';
+                li.textContent = it.name;
+                li.dataset.id = it.id;
+                li.dataset.name = it.name;
+                li.addEventListener('mousedown', function (e) {
+                  e.preventDefault();
+                  input.value = it.name;
+                  input.dataset.serviceId = it.id;
+                  hideSvcAcList(input);
+                });
+                ul.appendChild(li);
+              });
+              ul.classList.remove('hidden');
+            })
+            .catch(function () { hideSvcAcList(input); });
+        }, 220);
+      });
+      input.addEventListener('blur', function () {
+        setTimeout(function () {
+          hideSvcAcList(input);
+          var nm = (input.value || '').trim();
+          if (!nm || input.dataset.serviceId) return;
+          fetch('{{ url_for("api_services_search") }}?q=' + encodeURIComponent(nm) + '&limit=5')
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+              var items = (data && data.items) ? data.items : [];
+              var exact = items.find(function (x) { return x.name === nm; });
+              if (exact) {
+                input.dataset.serviceId = exact.id;
+                return;
+              }
+              if (!confirm('خدمت «' + nm + '» در لیست نیست. به لیست خدمات اضافه شود؟')) return;
+              fetch('{{ url_for("api_services_quick") }}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: nm })
+              })
+                .then(function (r) { return r.json(); })
+                .then(function (res) {
+                  if (res.ok && res.id) input.dataset.serviceId = res.id;
+                });
+            });
+        }, 180);
+      });
+    }
+
+    function collectCustomPanelPlansForSubmit() {
+      var out = [];
+      document.querySelectorAll('.custom-panel-plan-block').forEach(function (block) {
+        var tierEl = block.querySelector('.panel-plan-tier');
+        var tier = tierEl ? tierEl.value : '';
+        var price = (block.querySelector('.panel-plan-price') && block.querySelector('.panel-plan-price').value || '').trim();
+        var services = [];
+        block.querySelectorAll('.panel-svc-input').forEach(function (inp) {
+          var nm = (inp.value || '').trim();
+          if (!nm) return;
+          services.push({ name: nm, service_id: (inp.dataset.serviceId || '').trim() });
+        });
+        if (!tier) return;
+        out.push({
+          tier: tier,
+          price: price,
+          negotiable: tier === 'exclusive',
+          services: services
+        });
+      });
+      return out;
+    }
+
+    function updateCustomSimpleLinesTotal() {
+      var el = document.getElementById('custom-simple-lines-total');
+      if (!el) return;
+      var sum = 0;
+      document.querySelectorAll('#custom-simple-lines-rows .custom-simple-line-row').forEach(function (row) {
+        var p = row.querySelector('.custom-simple-l-price');
+        var q = row.querySelector('.custom-simple-l-qty');
+        var unit = parsePriceAmount(p && p.value ? p.value : '');
+        var n = parseInt(q && q.value ? q.value : '1', 10);
+        if (isNaN(n) || n < 1) n = 1;
+        sum += unit * n;
+      });
+      el.textContent = formatToman(sum);
+    }
+
+    function addCustomSimpleLineRow() {
+      var cont = document.getElementById('custom-simple-lines-rows');
+      if (!cont) return;
+      var wrap = document.createElement('div');
+      wrap.className = 'custom-simple-line-row rounded-xl border border-white/10 bg-black/30 p-3 grid gap-2 md:grid-cols-12 md:items-end';
+      wrap.innerHTML = '<div class="md:col-span-3"><label class="mb-1 block text-[11px] text-neutral-500">نام</label><input type="text" class="custom-simple-l-name w-full rounded-lg border border-white/10 bg-black/40 px-2 py-2 text-sm text-white" placeholder="نام خدمت"></div>' +
+        '<div class="md:col-span-2"><label class="mb-1 block text-[11px] text-neutral-500">قیمت واحد</label><input type="text" class="custom-simple-l-price w-full rounded-lg border border-white/10 bg-black/40 px-2 py-2 text-sm text-white"></div>' +
+        '<div class="md:col-span-1"><label class="mb-1 block text-[11px] text-neutral-500">تعداد</label><input type="number" min="1" value="1" class="custom-simple-l-qty w-full rounded-lg border border-white/10 bg-black/40 px-2 py-2 text-sm text-white"></div>' +
+        '<div class="md:col-span-5"><label class="mb-1 block text-[11px] text-neutral-500">توضیحات</label><textarea rows="2" class="custom-simple-l-desc w-full rounded-lg border border-white/10 bg-black/40 px-2 py-2 text-sm text-white"></textarea></div>' +
+        '<div class="md:col-span-1 flex md:justify-end"><button type="button" class="btn-remove-custom-simple-line mt-5 rounded-lg border border-rose-500/40 px-2 py-1 text-xs text-rose-200 hover:bg-rose-500/20">حذف</button></div>';
+      cont.appendChild(wrap);
+      updateCustomSimpleLinesTotal();
+    }
+
+    function collectCustomSimpleLinesForSubmit() {
+      var out = [];
+      document.querySelectorAll('#custom-simple-lines-rows .custom-simple-line-row').forEach(function (row) {
+        var name = (row.querySelector('.custom-simple-l-name') && row.querySelector('.custom-simple-l-name').value || '').trim();
+        if (!name) return;
+        var price = (row.querySelector('.custom-simple-l-price') && row.querySelector('.custom-simple-l-price').value || '').trim();
+        var qEl = row.querySelector('.custom-simple-l-qty');
+        var q = parseInt(qEl && qEl.value ? qEl.value : '1', 10);
+        if (isNaN(q) || q < 1) q = 1;
+        var desc = (row.querySelector('.custom-simple-l-desc') && row.querySelector('.custom-simple-l-desc').value || '');
+        out.push({ name: name, price: price, quantity: q, description: desc });
+      });
+      return out;
+    }
+
+    function activateFirstTab() {
+      var firstTab = document.querySelector('.order-tab');
+      if (firstTab) firstTab.click();
+    }
+
+    document.querySelectorAll('input[name="custom-invoice-type"]').forEach(function (r) {
+      r.addEventListener('change', syncCustomModalInvoiceUi);
+    });
+    var cslRows = document.getElementById('custom-simple-lines-rows');
+    if (cslRows) {
+      cslRows.addEventListener('click', function (e) {
+        if (!e.target.closest('.btn-remove-custom-simple-line')) return;
+        var row = e.target.closest('.custom-simple-line-row');
+        var cont = document.getElementById('custom-simple-lines-rows');
+        if (cont && cont.children.length > 1 && row) row.remove();
+        else if (row) {
+          row.querySelectorAll('input,textarea').forEach(function (el) {
+            if (el.classList.contains('custom-simple-l-qty')) el.value = '1';
+            else el.value = '';
+          });
+        }
+        updateCustomSimpleLinesTotal();
+      });
+      cslRows.addEventListener('input', updateCustomSimpleLinesTotal);
+    }
+    var btnAddCustomSimple = document.getElementById('btn-custom-add-simple-line');
+    if (btnAddCustomSimple) btnAddCustomSimple.addEventListener('click', addCustomSimpleLineRow);
+
+    bindCustomerAutocomplete();
+
+    var btnAddPanelPlan = document.getElementById('btn-custom-add-panel-plan');
+    if (btnAddPanelPlan) btnAddPanelPlan.addEventListener('click', addCustomPanelPlanBlock);
+    var panelPlansCont = document.getElementById('custom-panel-plans-container');
+    if (panelPlansCont) {
+      panelPlansCont.addEventListener('click', function (e) {
+        var planBlock = e.target.closest('.custom-panel-plan-block');
+        if (!planBlock) return;
+        if (e.target.closest('.btn-remove-panel-plan')) {
+          var cont = document.getElementById('custom-panel-plans-container');
+          if (cont && cont.children.length > 1) planBlock.remove();
+          else {
+            planBlock.querySelectorAll('input,select,textarea').forEach(function (el) {
+              if (el.classList.contains('panel-plan-tier')) el.value = 'bronze';
+              else if (!el.classList.contains('panel-svc-input')) el.value = '';
+              else { el.value = ''; el.dataset.serviceId = ''; }
+            });
+            var list = planBlock.querySelector('.panel-plan-services-list');
+            if (list) {
+              list.innerHTML = '';
+              addCustomPanelServiceRow(planBlock);
+            }
+          }
+          updateCustomPanelPlansTotal();
+          return;
+        }
+        if (e.target.closest('.btn-add-panel-svc')) {
+          addCustomPanelServiceRow(planBlock);
+          return;
+        }
+        if (e.target.closest('.btn-remove-panel-svc')) {
+          var svcRow = e.target.closest('.panel-svc-row');
+          var sl = planBlock.querySelector('.panel-plan-services-list');
+          if (sl && sl.children.length > 1 && svcRow) svcRow.remove();
+          else if (svcRow) {
+            var inp = svcRow.querySelector('.panel-svc-input');
+            if (inp) { inp.value = ''; inp.dataset.serviceId = ''; }
+          }
+        }
+      });
+    }
+
+    document.querySelectorAll('.order-tab').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var target = btn.dataset.target;
+        document.querySelectorAll('.tab-panel').forEach(function (panel) {
+          panel.classList.toggle('hidden', panel.id !== target);
+        });
+        document.querySelectorAll('.order-tab').forEach(function (tab) {
+          tab.classList.remove('order-tab-active');
+        });
+        btn.classList.add('order-tab-active');
+      });
+    });
+
+    document.querySelectorAll('.item-cb').forEach(function (cb) {
+      cb.addEventListener('change', updateCart);
+    });
+
+    document.getElementById('submit-order').addEventListener('click', function () {
+      document.getElementById('order-message').textContent = '';
+      var sel = getSelectionIds();
+      if (!sel.service_ids.length && !sel.plan_ids.length) {
+        document.getElementById('order-message').textContent = 'حداقل یک خدمت یا پلن انتخاب کنید.';
+        return;
+      }
+      var name = (document.getElementById('customer-name').value || '').trim();
+      if (!name) {
+        document.getElementById('order-message').textContent = 'نام مشتری الزامی است.';
+        return;
+      }
+      pendingOrderPayload = {
+        service_ids: sel.service_ids,
+        plan_ids: sel.plan_ids,
+        customer_mode: 'new',
+        invoice_type: getInvoiceType(),
+        customer: {
+          name: name,
+          phone: (document.getElementById('customer-phone').value || '').trim(),
+          address: (document.getElementById('customer-address').value || '').trim()
+        }
+      };
+      var total = selectedTotalAmount(sel);
+      document.getElementById('prefactor-body').innerHTML = buildPrefactorHtml(pendingOrderPayload, total);
+      openPrefactor();
+    });
+
+    document.getElementById('prefactor-cancel').addEventListener('click', closePrefactor);
+
+    document.getElementById('prefactor-confirm').addEventListener('click', function () {
+      var btn = document.getElementById('prefactor-confirm');
+      if (!pendingOrderPayload) return;
+      if (btn) btn.disabled = true;
+      fetch('{{ url_for("create_order") }}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(pendingOrderPayload)
+      })
+        .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, body: j }; }); })
+        .then(function (res) {
+          if (res.ok && res.body.ok) {
+            document.getElementById('order-message').textContent = 'سفارش با موفقیت ثبت شد.';
+            document.querySelectorAll('.item-cb').forEach(function (cb) { cb.checked = false; });
+            document.getElementById('customer-name').value = '';
+            document.getElementById('customer-phone').value = '';
+            document.getElementById('customer-address').value = '';
+            updateCart();
+            closePrefactor();
+            openPostOrderModal(res.body.order_id, res.body.source || 'orders', res.body.invoice_type || 'current');
+          } else {
+            document.getElementById('order-message').textContent = 'ثبت سفارش ناموفق بود.';
+          }
+        })
+        .catch(function () {
+          document.getElementById('order-message').textContent = 'خطای ارتباط با سرور.';
+        })
+        .finally(function () {
+          if (btn) btn.disabled = false;
+        });
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') {
+        closePrefactor();
+        closeReceiptPrompt();
+        closeCustomOrderModal();
+        closePostOrderModal();
+      }
+    });
+
+    document.getElementById('receipt-close').addEventListener('click', closeReceiptPrompt);
+    document.getElementById('receipt-open').addEventListener('click', function () {
+      if (pendingReceiptUrl) {
+        window.open(pendingReceiptUrl, '_blank');
+      }
+      closeReceiptPrompt();
+    });
+
+    document.getElementById('post-order-later').addEventListener('click', closePostOrderModal);
+    document.getElementById('btn-issue-invoice').addEventListener('click', function () {
+      var msgEl = document.getElementById('post-order-issue-msg');
+      if (msgEl) msgEl.textContent = '';
+      if (!pendingIssue.orderId || !pendingIssue.source) {
+        if (msgEl) msgEl.textContent = 'شناسه سفارش نامعتبر است.';
+        return;
+      }
+      var btn = document.getElementById('btn-issue-invoice');
+      if (btn) btn.disabled = true;
+      fetch('{{ url_for("issue_invoice") }}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ order_id: pendingIssue.orderId, source: pendingIssue.source })
+      })
+        .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, body: j }; }); })
+        .then(function (res) {
+          if (res.ok && res.body.ok) {
+            closePostOrderModal();
+            openReceiptPrompt(res.body.receipt_url || '', res.body.receipt_path || '');
+          } else if (msgEl) {
+            var m = (res.body && res.body.message) ? res.body.message : '';
+            if (res.body && res.body.error === 'roadmap_pdf') {
+              msgEl.textContent = m || 'ساخت PDF رودمپ ناموفق بود. Playwright و Chromium را نصب کنید.';
+            } else {
+              msgEl.textContent = m ? ('خطا: ' + m) : 'ساخت PDF ناموفق بود.';
+            }
+          }
+        })
+        .catch(function () {
+          if (msgEl) msgEl.textContent = 'خطای ارتباط با سرور.';
+        })
+        .finally(function () {
+          if (btn) btn.disabled = false;
+        });
+    });
+
+    var btnOpenCustom = document.getElementById('btn-open-custom-order');
+    if (btnOpenCustom) btnOpenCustom.addEventListener('click', openCustomOrderModal);
+    var btnCustomCancel = document.getElementById('btn-custom-order-cancel');
+    if (btnCustomCancel) btnCustomCancel.addEventListener('click', closeCustomOrderModal);
+    var btnCustomCloseX = document.getElementById('custom-order-close-x');
+    if (btnCustomCloseX) btnCustomCloseX.addEventListener('click', closeCustomOrderModal);
+    var btnApplySteps = document.getElementById('btn-custom-apply-steps');
+    if (btnApplySteps) btnApplySteps.addEventListener('click', function () { applyCustomStepCount(false); });
+
+    document.getElementById('btn-custom-order-submit').addEventListener('click', function () {
+      var msg = document.getElementById('custom-order-message');
+      var mainMsg = document.getElementById('order-message');
+      if (msg) msg.textContent = '';
+      var name = (document.getElementById('custom-cust-name').value || '').trim();
+      if (!name) {
+        if (msg) msg.textContent = 'نام مشتری الزامی است.';
+        return;
+      }
+      var customerPayload = {
+        name: name,
+        phone: (document.getElementById('custom-cust-phone').value || '').trim(),
+        address: (document.getElementById('custom-cust-address').value || '').trim()
+      };
+      var invType = getCustomInvoiceType();
+      var body;
+      if (invType === 'panel') {
+        var panelPlans = collectCustomPanelPlansForSubmit();
+        if (!panelPlans.length) {
+          if (msg) msg.textContent = 'حداقل یک پلن اضافه کنید.';
+          return;
+        }
+        for (var pi = 0; pi < panelPlans.length; pi += 1) {
+          var pl = panelPlans[pi];
+          if (!pl.services || !pl.services.length) {
+            if (msg) msg.textContent = 'برای پلن ' + (pi + 1) + ' حداقل یک خدمت وارد کنید.';
+            return;
+          }
+          if (pl.tier !== 'exclusive' && !parsePriceAmount(pl.price || '')) {
+            if (msg) msg.textContent = 'برای پلن ' + (pi + 1) + ' قیمت معتبر وارد کنید.';
+            return;
+          }
+        }
+        body = {
+          invoice_type: 'panel',
+          panel_plans: panelPlans,
+          customer: customerPayload
+        };
+      } else if (invType === 'simple') {
+        var simpleLines = collectCustomSimpleLinesForSubmit();
+        if (!simpleLines.length) {
+          if (msg) msg.textContent = 'حداقل یک ردیف خدمت با نام پر کنید.';
+          return;
+        }
+        for (var j = 0; j < simpleLines.length; j += 1) {
+          if (!parsePriceAmount(simpleLines[j].price || '')) {
+            if (msg) msg.textContent = 'برای هر ردیف قیمت واحد معتبر (بزرگ‌تر از صفر) وارد کنید.';
+            return;
+          }
+        }
+        body = {
+          invoice_type: 'simple',
+          simple_lines: simpleLines,
+          customer: customerPayload
+        };
+      } else if (invType === 'roadmap') {
+        var blocks = document.querySelectorAll('.custom-step-block');
+        if (!blocks.length) {
+          if (msg) msg.textContent = 'ابتدا تعداد مراحل را اعمال کنید.';
+          return;
+        }
+        var steps = [];
+        for (var i = 0; i < blocks.length; i += 1) {
+          var b = blocks[i];
+          var ti = b.querySelector('.custom-step-title');
+          var nm = b.querySelector('.custom-step-name');
+          var title = (ti && ti.value ? ti.value : '').trim();
+          var stepName = (nm && nm.value ? nm.value : '').trim();
+          if (!title && !stepName) {
+            if (msg) msg.textContent = 'در مرحله ' + (i + 1) + ' حداقل یکی از فیلدهای عنوان یا نام را پر کنید.';
+            return;
+          }
+          var ta = b.querySelector('.custom-step-desc');
+          var pr = b.querySelector('.custom-step-price');
+          var desc = ta ? ta.value : '';
+          var price = (pr && pr.value ? pr.value : '').trim();
+          steps.push({ title: title, name: stepName, description: desc, price: price });
+        }
+        body = {
+          steps: steps,
+          invoice_type: invType,
+          customer: customerPayload
+        };
+      }
+      var btn = document.getElementById('btn-custom-order-submit');
+      if (btn) btn.disabled = true;
+      fetch('{{ url_for("create_custom_order") }}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      })
+        .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, body: j }; }); })
+        .then(function (res) {
+          if (res.ok && res.body.ok) {
+            if (mainMsg) mainMsg.textContent = 'سفارش سفارشی ثبت شد. شناسه: ' + (res.body.order_id || '');
+            document.getElementById('custom-cust-name').value = '';
+            document.getElementById('custom-cust-phone').value = '';
+            document.getElementById('custom-cust-address').value = '';
+            var csl = document.getElementById('custom-simple-lines-rows');
+            if (csl) csl.innerHTML = '';
+            var ppc = document.getElementById('custom-panel-plans-container');
+            if (ppc) ppc.innerHTML = '';
+            closeCustomOrderModal();
+            openPostOrderModal(res.body.order_id, res.body.source || 'custom-order', res.body.invoice_type || 'current');
+          } else if (msg) {
+            msg.textContent = 'ثبت ناموفق بود.';
+            if (res.body && res.body.error === 'name') msg.textContent = 'نام مشتری الزامی است.';
+            else if (res.body && res.body.error === 'no_steps') msg.textContent = 'مرحله‌ای ثبت نشده.';
+            else if (res.body && res.body.error === 'no_simple_lines') msg.textContent = 'حداقل یک ردیف فاکتور ساده لازم است.';
+            else if (res.body && res.body.error === 'simple_line_name') msg.textContent = 'نام هر ردیف الزامی است.';
+            else if (res.body && res.body.error === 'step_title_or_name') msg.textContent = 'در هر مرحله عنوان یا نام را پر کنید.';
+            else if (res.body && res.body.error === 'no_panel_plans') msg.textContent = 'حداقل یک پلن لازم است.';
+            else if (res.body && res.body.error === 'panel_no_services') msg.textContent = 'هر پلن باید حداقل یک خدمت داشته باشد.';
+            else if (res.body && res.body.error === 'panel_price') msg.textContent = 'قیمت پلن معتبر نیست.';
+            else if (res.body && res.body.error === 'bad_panel_tier') msg.textContent = 'نوع پلن نامعتبر است.';
+          }
+        })
+        .catch(function () {
+          if (msg) msg.textContent = 'خطای ارتباط با سرور.';
+        })
+        .finally(function () {
+          if (btn) btn.disabled = false;
+        });
+    });
+
+    activateFirstTab();
+    updateCart();
+    refreshStaticPriceLabels();
+  </script>
+</body>
+</html>

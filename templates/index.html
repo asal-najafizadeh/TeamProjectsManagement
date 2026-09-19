@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>داشبورد</title>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            dg: {
+              950: '#07120e',
+              900: '#0a1a14',
+              800: '#0d231c',
+              700: '#123028',
+              600: '#1a4d3d',
+              500: '#228b5c',
+              400: '#34a870',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <script src="{{ url_for('serve_tailwind_bundle') }}"></script>
+  <style>
+    /* Fallback dark-green theme in case custom Tailwind colors are unavailable */
+    body.app-dark-theme {
+      background-color: #07120e;
+      color: #d1fae5;
+    }
+    .app-main-shell {
+      background-color: #07120e;
+    }
+    .app-main-panel {
+      background-color: #0a1a14;
+    }
+    .app-side-panel {
+      background-color: #0a1a14;
+      border-left-color: #1f2937;
+    }
+    .app-main-panel section {
+      border-color: #1f2937 !important;
+      box-shadow: 0 10px 28px -12px rgba(16, 185, 129, 0.26);
+      transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+    }
+    .app-main-panel section:hover {
+      border-color: rgba(52, 211, 153, 0.45) !important;
+      box-shadow: 0 18px 40px -18px rgba(34, 197, 94, 0.42);
+      transform: translateY(-1px);
+    }
+    button,
+    .btn-green {
+      box-shadow: 0 8px 22px -10px rgba(34, 197, 94, 0.5);
+      transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+    }
+    button:hover,
+    .btn-green:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 14px 30px -12px rgba(16, 185, 129, 0.65);
+      filter: brightness(1.04);
+    }
+    button:active,
+    .btn-green:active {
+      transform: translateY(0);
+      box-shadow: 0 8px 20px -12px rgba(16, 185, 129, 0.5);
+    }
+    .rounded-xl,
+    .rounded-2xl,
+    .rounded-lg {
+      border-color: rgba(31, 41, 55, 0.92);
+    }
+    input,
+    textarea,
+    select {
+      background-color: rgba(2, 6, 23, 0.72) !important;
+      color: #dcfce7 !important;
+      border-color: rgba(52, 65, 85, 0.95) !important;
+      box-shadow: inset 0 0 0 1px rgba(31, 41, 55, 0.85), 0 4px 12px -8px rgba(34, 197, 94, 0.25);
+      transition: border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
+    }
+    input::placeholder,
+    textarea::placeholder {
+      color: rgba(148, 163, 184, 0.85) !important;
+    }
+    input:focus,
+    textarea:focus,
+    select:focus {
+      outline: none;
+      background-color: rgba(2, 6, 23, 0.9) !important;
+      border-color: rgba(16, 185, 129, 0.75) !important;
+      box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.22), 0 12px 24px -16px rgba(34, 197, 94, 0.5);
+    }
+    #order-preview-box {
+      box-shadow: inset 0 0 0 1px rgba(31, 41, 55, 0.85), 0 14px 30px -20px rgba(16, 185, 129, 0.45);
+      border-color: rgba(31, 41, 55, 0.95) !important;
+    }
+    #app-popup {
+      box-shadow: 0 22px 44px -20px rgba(16, 185, 129, 0.7);
+    }
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: rgba(16, 185, 129, 0.75) rgba(15, 23, 42, 0.85);
+    }
+    *::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
+    }
+    *::-webkit-scrollbar-track {
+      background: linear-gradient(180deg, rgba(2, 6, 23, 0.95), rgba(15, 23, 42, 0.95));
+      border-radius: 999px;
+    }
+    *::-webkit-scrollbar-thumb {
+      background: linear-gradient(180deg, rgba(16, 185, 129, 0.92), rgba(5, 150, 105, 0.92));
+      border: 2px solid rgba(2, 6, 23, 0.9);
+      border-radius: 999px;
+      box-shadow: 0 6px 14px -8px rgba(16, 185, 129, 0.95);
+    }
+    *::-webkit-scrollbar-thumb:hover {
+      background: linear-gradient(180deg, rgba(52, 211, 153, 0.95), rgba(16, 185, 129, 0.95));
+    }
+    *::-webkit-scrollbar-corner {
+      background: rgba(2, 6, 23, 0.95);
+    }
+  </style>
+</head>
+<body class="app-dark-theme min-h-screen bg-dg-950 text-emerald-50 antialiased">
+  <div class="app-main-shell flex min-h-screen w-full flex-row" dir="ltr">
+    <main class="app-main-panel flex min-h-screen w-[90%] shrink-0 min-w-0 flex-col gap-4 overflow-y-auto p-4 md:p-6" dir="rtl">
+      <section class="rounded-xl border border-neutral-800 bg-neutral-950 p-5 shadow-xl shadow-[0_8px_32px_-6px_rgba(34,197,94,0.14)]">
+        <h2 class="mb-4 text-lg font-semibold tracking-tight text-neutral-200">پلن‌ها</h2>
+        {% if plans %}
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {% for pl in plans %}
+          {% set pc = pl.get('category_ids', []) %}
+          {% set ps = pl.get('service_ids', []) %}
+          <article class="flex min-h-[11rem] min-w-0 flex-col rounded-2xl border border-neutral-800/90 bg-gradient-to-br from-neutral-900 via-neutral-950 to-black p-4 shadow-lg shadow-[0_12px_40px_-10px_rgba(34,197,94,0.18)] ring-1 ring-emerald-950/30 transition hover:ring-emerald-800/40">
+            <div class="mb-3 flex shrink-0 items-center justify-between gap-2 border-b border-neutral-800/90 pb-3">
+              <h3 class="truncate text-base font-bold tracking-tight text-neutral-100">{{ pl.name }}</h3>
+              <span class="shrink-0 rounded-lg bg-emerald-950/60 px-2 py-1 text-[0.65rem] font-medium text-emerald-400/95">پلن</span>
+            </div>
+            {% if pl.get('price') %}
+            <p class="mb-2 text-xs font-semibold text-emerald-300">قیمت پلن: {{ pl.get('price') }}</p>
+            {% endif %}
+            <div class="flex min-h-0 flex-1 flex-col gap-2 text-[0.75rem] leading-relaxed text-neutral-400">
+              {% if pc %}
+              <div>
+                <p class="mb-1.5 text-[0.65rem] font-semibold uppercase tracking-wide text-neutral-500">دسته‌ها</p>
+                <ul class="space-y-1">
+                  {% for cid in pc %}
+                  <li class="flex items-start gap-2 text-neutral-300">
+                    <span class="mt-0.5 text-emerald-600/90" aria-hidden="true">✓</span>
+                    <span class="min-w-0 break-words">{{ category_name_map.get(cid, cid) }}</span>
+                  </li>
+                  {% endfor %}
+                </ul>
+              </div>
+              {% endif %}
+              {% if ps %}
+              <div>
+                <p class="mb-1.5 text-[0.65rem] font-semibold uppercase tracking-wide text-neutral-500">خدمات</p>
+                <ul class="space-y-1">
+                  {% for sid in ps %}
+                  {% set source_labels = plan_service_sources.get(pl.id, {}).get(sid, []) %}
+                  <li class="flex items-start gap-2 text-neutral-300">
+                    <span class="mt-0.5 text-emerald-600/90" aria-hidden="true">✓</span>
+                    <span class="min-w-0 break-words">
+                      {{ service_name_map.get(sid, sid) }}
+                      {% if source_labels %}
+                      <span class="mr-1 text-[0.62rem] text-neutral-500">({{ source_labels|join('، ') }})</span>
+                      {% endif %}
+                    </span>
+                  </li>
+                  {% endfor %}
+                </ul>
+              </div>
+              {% endif %}
+              {% if not pc and not ps %}
+              <p class="text-neutral-600">بدون دسته یا خدمت ضمیمه</p>
+              {% endif %}
+            </div>
+          </article>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-sm text-neutral-500">هنوز پلنی ثبت نشده.</p>
+        {% endif %}
+      </section>
+      <section class="rounded-xl border border-neutral-800 bg-neutral-950 p-5 shadow-xl shadow-[0_8px_32px_-6px_rgba(34,197,94,0.14)]">
+        <h2 class="mb-3 text-lg font-semibold tracking-tight text-neutral-200">دسته‌بندی‌ها</h2>
+        <div class="min-h-[3rem] space-y-4">
+          {% if category_groups %}
+          {% for g in category_groups %}
+          <div class="rounded-xl border border-neutral-800 bg-black/30 p-3">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-800/80 pb-2">
+              <span class="inline-flex items-center gap-2 text-sm font-medium text-neutral-100">
+                {{ g.parent.name }}
+                <span class="rounded-full bg-neutral-800 px-2 py-0.5 text-[0.65rem] text-neutral-400">اصلی</span>
+              </span>
+              <div class="flex items-center gap-3">
+                <button type="button" onclick="openEditCategory('{{ g.parent.id }}')" class="text-[0.7rem] font-medium text-emerald-500/90 hover:text-emerald-400 hover:underline">ویرایش</button>
+                <form method="post" action="{{ url_for('category_delete', cid=g.parent.id) }}" class="inline" onsubmit="return confirm('حذف این دستهٔ اصلی، همهٔ زیردسته‌هایش را هم حذف می‌کند و از خدمات و پلن‌ها جدا می‌شود. ادامه می‌دهید؟');">
+                  <button type="submit" class="text-[0.7rem] font-medium text-red-400/90 hover:text-red-300 hover:underline">حذف</button>
+                </form>
+              </div>
+            </div>
+            {% if g.children %}
+            <ul class="mt-2 space-y-2">
+              {% for ch in g.children %}
+              <li class="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-neutral-800/80 bg-neutral-900/40 px-2 py-1.5">
+                <span class="text-xs text-neutral-300">{{ ch.name }} <span class="text-[0.6rem] text-neutral-500">(زیردسته)</span></span>
+                <div class="flex items-center gap-3">
+                  <button type="button" onclick="openEditCategory('{{ ch.id }}')" class="text-[0.7rem] font-medium text-emerald-500/90 hover:text-emerald-400 hover:underline">ویرایش</button>
+                  <form method="post" action="{{ url_for('category_delete', cid=ch.id) }}" class="inline" onsubmit="return confirm('این زیردسته حذف شود؟ شناسهٔ آن از خدمات و پلن‌ها حذف می‌شود.');">
+                    <button type="submit" class="text-[0.7rem] font-medium text-red-400/90 hover:text-red-300 hover:underline">حذف</button>
+                  </form>
+                </div>
+              </li>
+              {% endfor %}
+            </ul>
+            {% else %}
+            <p class="mt-2 text-xs text-neutral-500">زیردسته‌ای ثبت نشده.</p>
+            {% endif %}
+          </div>
+          {% endfor %}
+          {% else %}
+          <p class="text-sm text-neutral-500">هنوز دسته‌ای ثبت نشده.</p>
+          {% endif %}
+        </div>
+      </section>
+      <section class="rounded-xl border border-neutral-800 bg-neutral-950 p-5 shadow-xl shadow-[0_8px_32px_-6px_rgba(34,197,94,0.14)]">
+        <h2 class="mb-3 text-lg font-semibold tracking-tight text-neutral-200">خدمات</h2>
+        <div class="min-h-[3rem]">
+          {% if services %}
+          <div class="flex flex-wrap gap-3">
+            {% for s in services %}
+            {% set cids = s.get('category_ids', []) %}
+            <div class="flex max-w-full flex-col gap-1.5 rounded-xl border border-neutral-800 bg-black/35 p-2 shadow-sm shadow-emerald-950/10">
+              <span class="inline-flex max-w-full flex-wrap items-center gap-1.5 rounded-full border border-neutral-700 bg-black/50 py-1 pl-1 pr-2.5 text-xs text-neutral-200 shadow-sm shadow-emerald-900/25">
+                <span class="rounded-full bg-neutral-800 px-2.5 py-1 font-medium text-neutral-100">{{ s.name }}</span>
+                {% if s.get('price') %}
+                <span class="rounded-full border border-neutral-800 bg-neutral-900/80 px-2 py-0.5 text-[0.65rem] text-neutral-300">{{ s.price }}</span>
+                {% endif %}
+                {% for cid in cids %}
+                <span class="rounded-full border border-neutral-800 bg-neutral-900/80 px-2 py-0.5 text-[0.65rem] text-neutral-400">{{ category_name_map.get(cid, cid) }}</span>
+                {% endfor %}
+              </span>
+              <div class="flex items-center gap-3 px-1">
+                <button type="button" onclick="openEditService('{{ s.id }}')" class="text-[0.7rem] font-medium text-emerald-500/90 hover:text-emerald-400 hover:underline">ویرایش</button>
+                <form method="post" action="{{ url_for('remove_service', sid=s.id) }}" class="inline" onsubmit="return confirm('این خدمت حذف شود؟');">
+                  <button type="submit" class="text-[0.7rem] font-medium text-red-400/90 hover:text-red-300 hover:underline">حذف</button>
+                </form>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <p class="text-sm text-neutral-500">هنوز خدمتی ثبت نشده.</p>
+          {% endif %}
+        </div>
+      </section>
+      <section class="rounded-xl border border-neutral-800 bg-neutral-950 p-5 shadow-xl shadow-[0_8px_32px_-6px_rgba(34,197,94,0.14)]">
+        <h2 class="mb-3 text-lg font-semibold tracking-tight text-neutral-200">مشتریان اخیر</h2>
+        <div class="min-h-[3rem]">
+          {% if customers %}
+          <div class="flex flex-wrap gap-3">
+            {% for c in customers|reverse %}
+            <div class="flex max-w-full flex-col gap-1.5 rounded-xl border border-neutral-800 bg-black/35 p-2 shadow-sm shadow-emerald-950/10">
+              <span class="inline-flex max-w-full flex-wrap items-center gap-1.5 rounded-full border border-neutral-700 bg-black/50 py-1 pl-1 pr-2.5 text-xs text-neutral-200 shadow-sm shadow-emerald-900/25">
+                <span class="rounded-full bg-neutral-800 px-2.5 py-1 font-medium text-neutral-100">{{ c.name }}</span>
+                {% if c.get('phone') %}
+                <span class="rounded-full border border-neutral-800 bg-neutral-900/80 px-2 py-0.5 text-[0.65rem] text-neutral-400">{{ c.phone }}</span>
+                {% endif %}
+                {% if c.get('address') %}
+                <span class="max-w-[12rem] truncate rounded-full border border-neutral-800 bg-neutral-900/80 px-2 py-0.5 text-[0.65rem] text-neutral-500" title="{{ c.address }}">{{ c.address }}</span>
+                {% endif %}
+              </span>
+              <div class="flex items-center gap-3 px-1">
+                <button type="button" onclick="openEditCustomer('{{ c.id }}')" class="text-[0.7rem] font-medium text-emerald-500/90 hover:text-emerald-400 hover:underline">ویرایش</button>
+                <form method="post" action="{{ url_for('customer_delete', cid=c.id) }}" class="inline" onsubmit="return confirm('این مشتری از لیست حذف شود؟ سفارش‌های قبلی در آرشیو می‌مانند.');">
+                  <button type="submit" class="text-[0.7rem] font-medium text-red-400/90 hover:text-red-300 hover:underline">حذف</button>
+                </form>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <p class="text-sm text-neutral-500">هنوز مشتری ثبت نشده.</p>
+          {% endif %}
+        </div>
+      </section>
+    </main>
+    <aside class="app-side-panel flex min-h-screen w-[10%] shrink-0 min-w-0 flex-col gap-3 border-l border-neutral-800 bg-neutral-950 p-2 shadow-[inset_8px_0_24px_-12px_rgba(34,197,94,0.12)] md:p-3" dir="rtl">
+      <a href="{{ url_for('index') }}"
+        class="block w-full rounded-lg border border-amber-600/50 bg-amber-950/40 px-1 py-2.5 text-center text-[0.65rem] font-semibold leading-tight text-amber-200 shadow-md shadow-black/20 transition hover:bg-amber-950/60 md:text-xs">ثبت سفارش</a>
+      <button type="button" onclick="openModal('modal-service')"
+        class="w-full rounded-lg bg-gradient-to-b from-dg-500 to-dg-600 px-1 py-2.5 text-center text-[0.65rem] font-medium leading-tight text-white shadow-md shadow-black/30 transition hover:from-dg-400 hover:to-dg-500 md:text-xs">افزودن خدمت</button>
+      <button type="button" onclick="openModal('modal-plan')"
+        class="w-full rounded-lg bg-gradient-to-b from-dg-500 to-dg-600 px-1 py-2.5 text-center text-[0.65rem] font-medium leading-tight text-white shadow-md shadow-black/30 transition hover:from-dg-400 hover:to-dg-500 md:text-xs">افزودن پلن</button>
+      <button type="button" onclick="openModal('modal-category')"
+        class="w-full rounded-lg bg-gradient-to-b from-dg-500 to-dg-600 px-1 py-2.5 text-center text-[0.65rem] font-medium leading-tight text-white shadow-md shadow-black/30 transition hover:from-dg-400 hover:to-dg-500 md:text-xs">افزودن دسته</button>
+      <button type="button" onclick="openModal('modal-customer')"
+        class="w-full rounded-lg bg-gradient-to-b from-dg-500 to-dg-600 px-1 py-2.5 text-center text-[0.65rem] font-medium leading-tight text-white shadow-md shadow-black/30 transition hover:from-dg-400 hover:to-dg-500 md:text-xs">افزودن مشتری</button>
+    </aside>
+  </div>
+
+  <div id="modal-category" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/65 p-4" onclick="if(event.target===this) closeModal('modal-category')">
+    <div class="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-neutral-800 bg-neutral-950 p-6 shadow-2xl shadow-[0_12px_40px_-8px_rgba(34,197,94,0.18)]" onclick="event.stopPropagation()">
+      <div class="mb-4 flex items-center justify-between">
+        <h3 class="text-lg font-semibold text-neutral-200">افزودن دسته‌بندی</h3>
+        <button type="button" onclick="closeModal('modal-category')" class="rounded-md px-2 py-1 text-sm text-emerald-200/70 hover:bg-dg-800">✕</button>
+      </div>
+      <form method="post" action="{{ url_for('add_category') }}" class="space-y-4" id="form-category">
+        <div>
+          <label class="mb-1 block text-sm text-emerald-200/90">نام دسته‌بندی</label>
+          <input type="text" name="name" required maxlength="200"
+            class="w-full rounded-lg border border-dg-600/50 bg-dg-950/80 px-3 py-2 text-emerald-50 placeholder:text-emerald-600/50" placeholder="نام را وارد کنید">
+        </div>
+        <div>
+          <p class="mb-2 text-sm text-emerald-200/90">نوع دسته‌بندی</p>
+          <input type="hidden" name="kind" id="category-kind" value="parent">
+          <label class="mb-2 flex cursor-pointer items-center gap-2 rounded-lg border border-dg-600/40 bg-dg-950/40 px-3 py-2">
+            <input type="checkbox" id="cb-cat-parent" checked class="h-4 w-4 rounded border-dg-600 accent-dg-500" onchange="onCategoryTypeParent()">
+            <span class="text-sm">دسته اصلی (مادر)</span>
+          </label>
+          <label class="flex cursor-pointer items-center gap-2 rounded-lg border border-dg-600/40 bg-dg-950/40 px-3 py-2">
+            <input type="checkbox" id="cb-cat-child" class="h-4 w-4 rounded border-dg-600 accent-dg-500" onchange="onCategoryTypeChild()">
+            <span class="text-sm">زیردسته</span>
+          </label>
+        </div>
+        <div id="category-parent-wrap" class="hidden">
+          <label class="mb-1 block text-sm text-emerald-200/90">دسته اصلی والد</label>
+          <select name="parent_id" id="category-parent-select"
+            class="w-full rounded-lg border border-dg-600/50 bg-dg-950/80 px-3 py-2 text-emerald-50">
+            <option value="">انتخاب کنید</option>
+            {% for g in category_groups %}
+            <option value="{{ g.parent.id }}">{{ g.parent.name }}</option>
+            {% endfor %}
+          </select>
+          {% if not category_groups %}
+          <p class="mt-1 text-xs text-amber-400/90">ابتدا یک دسته اصلی ایجاد کنید.</p>
+          {% endif %}
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" onclick="closeModal('modal-category')" class="rounded-lg border border-dg-600/50 px-4 py-2 text-sm text-emerald-200 hover:bg-dg-800">انصراف</button>
+          <button type="submit" class="rounded-lg bg-gradient-to-b from-dg-500 to-dg-600 px-4 py-2 text-sm font-medium text-white shadow-md hover:from-dg-400 hover:to-dg-500">ذخیره</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="modal-edit-category" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/65 p-4" onclick="if(event.target===this) closeModal('modal-edit-category')">
+    <div class="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-neutral-800 bg-neutral-950 p-6 shadow-2xl shadow-[0_12px_40px_-8px_rgba(34,197,94,0.18)]" onclick="event.stopPropagation()">
+      <div class="mb-4 flex items-center justify-between">
+        <h3 class="text-lg font-semibold text-neutral-200">ویرایش دسته‌بندی</h3>
+        <button type="button" onclick="closeModal('modal-edit-category')" class="rounded-md px-2 py-1 text-sm text-emerald-200/70 hover:bg-dg-800">✕</button>
+      </div>
+      <form id="form-edit-category" method="post" action="" class="space-y-4">
+        <div>
+          <label class="mb-1 block text-sm text-emerald-200/90">نام</label>
+          <input type="text" name="name" id="edit-cat-name" required maxlength="200"
+            class="w-full rounded-lg border border-dg-600/50 bg-dg-950/80 px-3 py-2 text-emerald-50 placeholder:text-emerald-600/50" placeholder="نام دسته">
+        </div>
+        <div id="edit-cat-parent-wrap" class="hidden">
+          <label class="mb-1 block text-sm text-emerald-200/90">دستهٔ اصلی والد</label>
+          <select name="parent_id" id="edit-cat-parent-select"
+            class="w-full rounded-lg border border-dg-600/50 bg-dg-950/80 px-3 py-2 text-emerald-50">
+            <option value="">انتخاب کنید</option>
+            {% for g in category_groups %}
+            <option value="{{ g.parent.id }}">{{ g.parent.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <p id="edit-cat-hint" class="hidden text-xs text-neutral-500">برای دستهٔ اصلی فقط نام قابل تغییر است.</p>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" onclick="closeModal('modal-edit-category')" class="rounded-lg border border-dg-600/50 px-4 py-2 text-sm text-emerald-200 hover:bg-dg-800">انصراف</button>
+          <button type="submit" class="rounded-lg bg-gradient-to-b from-dg-500 to-dg-600 px-4 py-2 text-sm font-medium text-white shadow-md hover:from-dg-400 hover:to-dg-500">ذخیره تغییرات</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="modal-customer" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/65 p-4" onclick="if(event.target===this) closeModal('modal-customer')">
+    <div class="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-neutral-800 bg-neutral-950 p-6 shadow-2xl shadow-[0_12px_40px_-8px_rgba(34,197,94,0.18)]" onclick="event.stopPropagation()">
+      <div class="mb-4 flex items-center justify-between">
+        <h3 class="text-lg font-semibold text-neutral-200">افزودن مشتری</h3>
+        <button type="button" onclick="closeModal('modal-customer')" class="rounded-md px-2 py-1 text-sm text-emerald-200/70 hover:bg-dg-800">✕</button>
+      </div>
+      <form method="post" action="{{ url_for('add_customer') }}" class="space-y-4">
+        <div>
+          <label class="mb-1 block text-sm text-emerald-200/90">نام مشتری یا شرکت</label>
+          <input type="text" name="name" required maxlength="200"
+            class="w-full rounded-lg border border-dg-600/50 bg-dg-950/80 px-3 py-2 text-emerald-50 placeholder:text-emerald-600/50" placeholder="نام یا شرکت">
+        </div>
+        <div>
+          <label class="mb-1 block text-sm text-emerald-200/90">شماره همراه</label>
+          <input type="text" name="phone" maxlength="50"
+            class="w-full rounded-lg border border-dg-600/50 bg-dg-950/80 px-3 py-2 text-emerald-50 placeholder:text-emerald-600/50" placeholder="مثال ۰۹۱۲...">
+        </div>
+        <div>
+          <label class="mb-1 block text-sm text-emerald-200/90">آدرس</label>
+          <textarea name="address" rows="3" maxlength="1000"
+            class="w-full rounded-lg border border-dg-600/50 bg-dg-950/80 px-3 py-2 text-emerald-50 placeholder:text-emerald-600/50" placeholder="آدرس کامل"></textarea>
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" onclick="closeModal('modal-customer')" class="rounded-lg border border-dg-600/50 px-4 py-2 text-sm text-emerald-200 hover:bg-dg-800">انصراف</button>
+          <button type="submit" class="rounded-lg bg-gradient-to-b from-dg-500 to-dg-600 px-4 py-2 text-sm font-medium text-white shadow-md hover:from-dg-400 hover:to-dg-500">ذخیره</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="modal-edit-customer" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/65 p-4" onclick="if(event.target===this) closeModal('modal-edit-customer')">
+    <div class="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-neutral-800 bg-neutral-950 p-6 shadow-2xl shadow-[0_12px_40px_-8px_rgba(34,197,94,0.18)]" onclick="event.stopPropagation()">
+      <div class="mb-4 flex items-center justify-between">
+        <h3 class="text-lg font-semibold text-neutral-200">ویرایش مشتری</h3>
+        <button type="button" onclick="closeModal('modal-edit-customer')" class="rounded-md px-2 py-1 text-sm text-emerald-200/70 hover:bg-dg-800">✕</button>
+      </div>
+      <form id="form-edit-customer" method="post" action="" class="space-y-4">
+        <div>
+          <label class="mb-1 block text-sm text-emerald-200/90">نام مشتری یا شرکت</label>
+          <input type="text" name="name" id="edit-cust-name" required maxlength="200"
+            class="w-full rounded-lg border border-dg-600/50 bg-dg-950/80 px-3 py-2 text-emerald-50 placeholder:text-emerald-600/50" placeholder="نام یا شرکت">
+        </div>
+        <div>
+          <label class="mb-1 block text-sm text-emerald-200/90">شماره همراه</label>
+          <input type="text" name="phone" id="edit-cust-phone" maxlength="50"
+            class="w-full rounded-lg border border-dg-600/50 bg-dg-950/80 px-3 py-2 text-emerald-50 placeholder:text-emerald-600/50" placeholder="مثال ۰۹۱۲...">
+        </div>
+        <div>
+          <label class="mb-1 block text-sm text-emerald-200/90">آدرس</label>
+          <textarea name="address" id="edit-cust-address" rows="3" maxlength="1000"
+            class="w-full rounded-lg border border-dg-600/50 bg-dg-950/80 px-3 py-2 text-emerald-50 placeholder:text-emerald-600/50" placeholder="آدرس کامل"></textarea>
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" onclick="closeModal('modal-edit-customer')" class="rounded-lg border border-dg-600/50 px-4 py-2 text-sm text-emerald-200 hover:bg-dg-800">انصراف</button>
+          <button type="submit" class="rounded-lg bg-gradient-to-b from-dg-500 to-dg-600 px-4 py-2 text-sm font-medium text-white shadow-md hover:from-dg-400 hover:to-dg-500">ذخیره تغییرات</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="modal-service" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/65 p-4" onclick="if(event.target===this) closeModal('modal-service')">
+    <div class="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-neutral-800 bg-neutral-950 p-6 shadow-2xl shadow-[0_12px_40px_-8px_rgba(34,197,94,0.18)]" onclick="event.stopPropagation()">
+      <div class="mb-4 flex items-center justify-between">
+        <h3 class="text-lg font-semibold text-neutral-200">افزودن خدمت</h3>
+        <button type="button" onclick="closeModal('modal-service')" class="rounded-md px-2 py-1 text-sm text-emerald-200/70 hover:bg-dg-800">✕</button>
+      </div>
+      <form method="post" action="{{ url_for('add_service') }}" class="space-y-4">
+        <div>
+          <label class="mb-1 block text-sm text-emerald-200/90">نام خدمت</label>
+          <input type="text" name="name" required maxlength="200"
+            class="w-full rounded-lg border border-dg-600/50 bg-dg-950/80 px-3 py-2 text-emerald-50 placeholder:text-emerald-600/50" placeholder="نام خدمت">
+        </div>
+        <div>
+          <label class="mb-1 block text-sm text-emerald-200/90">قیمت</label>
+          <input type="text" name="price" maxlength="80"
+            class="w-full rounded-lg border border-dg-600/50 bg-dg-950/80 px-3 py-2 text-emerald-50 placeholder:text-emerald-600/50" placeholder="مثال: ۱٬۵۰۰٬۰۰۰ تومان">
+        </div>
+        <div>
+          <label class="mb-1 block text-sm text-emerald-200/90">مفاد خدمت</label>
+          <div class="space-y-2 rounded-lg border border-dg-600/40 bg-dg-950/40 p-3">
+            <div class="flex items-center gap-2">
+              <input type="text" id="service-term-input" maxlength="200"
+                class="flex-1 rounded-lg border border-dg-600/50 bg-dg-950/80 px-3 py-2 text-sm text-emerald-50 placeholder:text-emerald-600/50"
+                placeholder="مثال: اجرای کامل طی ۷ روز">
+              <button type="button" onclick="addServiceTerm('add')"
+                class="rounded-lg border border-emerald-700/60 px-3 py-2 text-xs font-semibold text-emerald-300 hover:bg-emerald-900/30">افزودن مفاد</button>
+            </div>
+            <div id="service-terms-hidden" class="hidden"></div>
+            <ul id="service-terms-list" class="space-y-1 text-xs text-emerald-100/90"></ul>
+          </div>
+        </div>
+        <div>
+          <label class="mb-1 block text-sm text-emerald-200/90">توضیحات تکمیلی خدمت</label>
+          <textarea name="extra_note" rows="3" maxlength="2000"
+            class="w-full rounded-lg border border-dg-600/50 bg-dg-950/80 px-3 py-2 text-emerald-50 placeholder:text-emerald-600/50"
+            placeholder="این متن در تب‌ها نمایش داده نمی‌شود و فقط در فاکتور می‌آید."></textarea>
+        </div>
+        <div>
+          <p class="mb-2 text-sm font-medium text-emerald-200/90">انتخاب دسته‌بندی (چندتایی)</p>
+          {% if category_groups %}
+          <div class="max-h-48 space-y-3 overflow-y-auto rounded-lg border border-dg-600/40 bg-dg-950/40 p-3">
+            {% for g in category_groups %}
+            <div class="border-b border-dg-700/50 pb-2 last:border-0 last:pb-0">
+              <p class="mb-1 text-xs font-semibold text-emerald-500">دسته اصلی</p>
+              <label class="flex cursor-pointer items-center gap-2 py-1 text-sm">
+                <input type="checkbox" name="category_ids" value="{{ g.parent.id }}" class="h-4 w-4 rounded border-dg-600 accent-dg-500">
+                <span>{{ g.parent.name }}</span>
+              </label>
+              {% if g.children %}
+              <p class="mb-1 mt-2 text-xs font-semibold text-emerald-500/80">زیردسته‌ها</p>
+              <div class="mr-2 space-y-1 border-r-2 border-dg-600/40 pr-2">
+                {% for ch in g.children %}
+                <label class="flex cursor-pointer items-center gap-2 py-0.5 text-sm text-emerald-100/85">
+                  <input type="checkbox" name="category_ids" value="{{ ch.id }}" class="h-4 w-4 rounded border-dg-600 accent-dg-500">
+                  <span>{{ ch.name }}</span>
+                </label>
+                {% endfor %}
+              </div>
+              {% endif %}
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <p class="text-sm text-amber-400/90">ابتدا دسته‌بندی ایجاد کنید.</p>
+          {% endif %}
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" onclick="closeModal('modal-service')" class="rounded-lg border border-dg-600/50 px-4 py-2 text-sm text-emerald-200 hover:bg-dg-800">انصراف</button>
+          <button type="submit" class="rounded-lg bg-gradient-to-b from-dg-500 to-dg-600 px-4 py-2 text-sm font-medium text-white shadow-md hover:from-dg-400 hover:to-dg-500">ذخیره</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="modal-edit-service" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/65 p-4" onclick="if(event.target===this) closeModal('modal-edit-service')">
+    <div class="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-neutral-800 bg-neutral-950 p-6 shadow-2xl shadow-[0_12px_40px_-8px_rgba(34,197,94,0.18)]" onclick="event.stopPropagation()">
+      <div class="mb-4 flex items-center justify-between">
+        <h3 class="text-lg font-semibold text-neutral-200">ویرایش خدمت</h3>
+        <button type="button" onclick="closeModal('modal-edit-service')" class="rounded-md px-2 py-1 text-sm text-emerald-200/70 hover:bg-dg-800">✕</button>
+      </div>
+      <form id="form-edit-service" method="post" action="" class="space-y-4">
+        <div>
+          <label class="mb-1 block text-sm text-emerald-200/90">نام خدمت</label>
+          <input type="text" name="name" id="edit-svc-name" required maxlength="200"
+            class="w-full rounded-lg border border-dg-600/50 bg-dg-950/80 px-3 py-2 text-emerald-50 placeholder:text-emerald-600/50" placeholder="نام خدمت">
+        </div>
+        <div>
+          <label class="mb-1 block text-sm text-emerald-200/90">قیمت</label>
+          <input type="text" name="price" id="edit-svc-price" maxlength="80"
+            class="w-full rounded-lg border border-dg-600/50 bg-dg-950/80 px-3 py-2 text-emerald-50 placeholder:text-emerald-600/50" placeholder="مثال: ۱٬۵۰۰٬۰۰۰ تومان">
+        </div>
+        <div>
+          <label class="mb-1 block text-sm text-emerald-200/90">مفاد خدمت</label>
+          <div class="space-y-2 rounded-lg border border-dg-600/40 bg-dg-950/40 p-3">
+            <div class="flex items-center gap-2">
+              <input type="text" id="edit-service-term-input" maxlength="200"
+                class="flex-1 rounded-lg border border-dg-600/50 bg-dg-950/80 px-3 py-2 text-sm text-emerald-50 placeholder:text-emerald-600/50"
+                placeholder="مثال: پشتیبانی آنلاین">
+              <button type="button" onclick="addServiceTerm('edit')"
+                class="rounded-lg border border-emerald-700/60 px-3 py-2 text-xs font-semibold text-emerald-300 hover:bg-emerald-900/30">افزودن مفاد</button>
+            </div>
+            <div id="edit-service-terms-hidden" class="hidden"></div>
+            <ul id="edit-service-terms-list" class="space-y-1 text-xs text-emerald-100/90"></ul>
+          </div>
+        </div>
+        <div>
+          <label class="mb-1 block text-sm text-emerald-200/90">توضیحات تکمیلی خدمت</label>
+          <textarea name="extra_note" id="edit-svc-extra-note" rows="3" maxlength="2000"
+            class="w-full rounded-lg border border-dg-600/50 bg-dg-950/80 px-3 py-2 text-emerald-50 placeholder:text-emerald-600/50"
+            placeholder="این متن در تب‌ها نمایش داده نمی‌شود و فقط در فاکتور می‌آید."></textarea>
+        </div>
+        <div>
+          <p class="mb-2 text-sm font-medium text-emerald-200/90">انتخاب دسته‌بندی (چندتایی)</p>
+          {% if category_groups %}
+          <div class="max-h-48 space-y-3 overflow-y-auto rounded-lg border border-dg-600/40 bg-dg-950/40 p-3">
+            {% for g in category_groups %}
+            <div class="border-b border-dg-700/50 pb-2 last:border-0 last:pb-0">
+              <p class="mb-1 text-xs font-semibold text-emerald-500">دسته اصلی</p>
+              <label class="flex cursor-pointer items-center gap-2 py-1 text-sm">
+                <input type="checkbox" name="category_ids" value="{{ g.parent.id }}" class="edit-svc-cat h-4 w-4 rounded border-dg-600 accent-dg-500">
+                <span>{{ g.parent.name }}</span>
+              </label>
+              {% if g.children %}
+              <p class="mb-1 mt-2 text-xs font-semibold text-emerald-500/80">زیردسته‌ها</p>
+              <div class="mr-2 space-y-1 border-r-2 border-dg-600/40 pr-2">
+                {% for ch in g.children %}
+                <label class="flex cursor-pointer items-center gap-2 py-0.5 text-sm text-emerald-100/85">
+                  <input type="checkbox" name="category_ids" value="{{ ch.id }}" class="edit-svc-cat h-4 w-4 rounded border-dg-600 accent-dg-500">
+                  <span>{{ ch.name }}</span>
+                </label>
+                {% endfor %}
+              </div>
+              {% endif %}
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <p class="text-sm text-amber-400/90">ابتدا دسته‌بندی ایجاد کنید.</p>
+          {% endif %}
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" onclick="closeModal('modal-edit-service')" class="rounded-lg border border-dg-600/50 px-4 py-2 text-sm text-emerald-200 hover:bg-dg-800">انصراف</button>
+          <button type="submit" class="rounded-lg bg-gradient-to-b from-dg-500 to-dg-600 px-4 py-2 text-sm font-medium text-white shadow-md hover:from-dg-400 hover:to-dg-500">ذخیره تغییرات</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="modal-plan" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/65 p-4" onclick="if(event.target===this) closeModal('modal-plan')">
+    <div class="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-neutral-800 bg-neutral-950 p-6 shadow-2xl shadow-[0_12px_40px_-8px_rgba(34,197,94,0.18)]" onclick="event.stopPropagation()">
+      <div class="mb-4 flex items-center justify-between">
+        <h3 class="text-lg font-semibold text-neutral-200">افزودن پلن</h3>
+        <button type="button" onclick="closeModal('modal-plan')" class="rounded-md px-2 py-1 text-sm text-emerald-200/70 hover:bg-dg-800">✕</button>
+      </div>
+      <form method="post" action="{{ url_for('add_plan') }}" class="space-y-4">
+        <div>
+          <label class="mb-1 block text-sm text-emerald-200/90">نام پلن</label>
+          <input type="text" name="name" required maxlength="200"
+            class="w-full rounded-lg border border-dg-600/50 bg-dg-950/80 px-3 py-2 text-emerald-50 placeholder:text-emerald-600/50" placeholder="نام پلن">
+        </div>
+        <div>
+          <label class="mb-1 block text-sm text-emerald-200/90">قیمت پلن</label>
+          <input type="text" name="price" maxlength="80"
+            class="w-full rounded-lg border border-dg-600/50 bg-dg-950/80 px-3 py-2 text-emerald-50 placeholder:text-emerald-600/50" placeholder="مثال: ۲٬۵۰۰٬۰۰۰ تومان">
+        </div>
+        <div>
+          <p class="mb-2 text-sm font-medium text-emerald-200/90">دسته‌های اصلی و زیردسته‌ها</p>
+          {% if category_groups %}
+          <div class="max-h-40 space-y-3 overflow-y-auto rounded-lg border border-dg-600/40 bg-dg-950/40 p-3">
+            {% for g in category_groups %}
+            <div class="border-b border-dg-700/50 pb-2 last:border-0 last:pb-0">
+              <label class="flex cursor-pointer items-center gap-2 py-1 text-sm">
+                <input type="checkbox" name="category_ids" value="{{ g.parent.id }}" class="h-4 w-4 rounded border-dg-600 accent-dg-500">
+                <span class="font-medium text-emerald-200">{{ g.parent.name }}</span>
+                <span class="text-xs text-emerald-500">(اصلی)</span>
+              </label>
+              {% if g.children %}
+              <div class="mr-2 mt-1 space-y-1 border-r-2 border-dg-600/40 pr-2">
+                {% for ch in g.children %}
+                <label class="flex cursor-pointer items-center gap-2 py-0.5 text-sm">
+                  <input type="checkbox" name="category_ids" value="{{ ch.id }}" class="h-4 w-4 rounded border-dg-600 accent-dg-500">
+                  <span>{{ ch.name }}</span>
+                  <span class="text-xs text-emerald-500/70">(زیردسته)</span>
+                </label>
+                {% endfor %}
+              </div>
+              {% endif %}
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <p class="text-sm text-amber-400/90">دسته‌ای برای اتصال وجود ندارد.</p>
+          {% endif %}
+        </div>
+        <div>
+          <p class="mb-2 text-sm font-medium text-emerald-200/90">خدمات پلن</p>
+          {% if services %}
+          <div class="max-h-36 space-y-1 overflow-y-auto rounded-lg border border-dg-600/40 bg-dg-950/40 p-3">
+            {% for s in services %}
+            <label class="flex cursor-pointer items-center gap-2 py-1 text-sm">
+              <input type="checkbox" name="service_ids" value="{{ s.id }}" class="h-4 w-4 rounded border-dg-600 accent-dg-500">
+              <span>{{ s.name }}</span>
+            </label>
+            {% endfor %}
+          </div>
+          {% else %}
+          <p class="text-sm text-amber-400/90">ابتدا خدمت ایجاد کنید.</p>
+          {% endif %}
+        </div>
+        <div>
+          <label class="mb-1 block text-sm text-emerald-200/90">مفاد پلن</label>
+          <div class="space-y-2 rounded-lg border border-dg-600/40 bg-dg-950/40 p-3">
+            <div class="flex items-center gap-2">
+              <input type="text" id="plan-term-input" maxlength="200"
+                class="flex-1 rounded-lg border border-dg-600/50 bg-dg-950/80 px-3 py-2 text-sm text-emerald-50 placeholder:text-emerald-600/50"
+                placeholder="مثال: پشتیبانی ۳۰ روزه">
+              <button type="button" onclick="addPlanTerm()"
+                class="rounded-lg border border-emerald-700/60 px-3 py-2 text-xs font-semibold text-emerald-300 hover:bg-emerald-900/30">افزودن مفاد</button>
+            </div>
+            <div id="plan-terms-hidden" class="hidden"></div>
+            <ul id="plan-terms-list" class="space-y-1 text-xs text-emerald-100/90"></ul>
+            <p class="text-[0.7rem] text-neutral-500">برای هر مورد روی «افزودن مفاد» بزنید.</p>
+          </div>
+        </div>
+        <div>
+          <label class="mb-1 block text-sm text-emerald-200/90">توضیحات تکمیلی پلن</label>
+          <textarea name="extra_note" rows="3" maxlength="2000"
+            class="w-full rounded-lg border border-dg-600/50 bg-dg-950/80 px-3 py-2 text-emerald-50 placeholder:text-emerald-600/50"
+            placeholder="این متن در صفحه نمایش داده نمی‌شود و فقط در فاکتورِ پلن انتخاب‌شده می‌آید."></textarea>
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" onclick="closeModal('modal-plan')" class="rounded-lg border border-dg-600/50 px-4 py-2 text-sm text-emerald-200 hover:bg-dg-800">انصراف</button>
+          <button type="submit" class="rounded-lg bg-gradient-to-b from-dg-500 to-dg-600 px-4 py-2 text-sm font-medium text-white shadow-md hover:from-dg-400 hover:to-dg-500">ذخیره</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="popup-backdrop" class="fixed inset-0 z-[80] hidden items-center justify-center bg-black/60 p-4" onclick="if(event.target===this) closeAppPopup()">
+    <div id="app-popup" class="w-full max-w-md rounded-xl border border-emerald-700/60 bg-neutral-950 p-5 text-right shadow-2xl">
+      <h4 id="app-popup-title" class="mb-2 text-base font-semibold text-emerald-300">پیام</h4>
+      <p id="app-popup-message" class="text-sm leading-6 text-neutral-200"></p>
+      <div class="mt-4 flex justify-end">
+        <button type="button" onclick="closeAppPopup()" class="rounded-lg bg-gradient-to-b from-dg-500 to-dg-600 px-4 py-2 text-sm font-medium text-white">متوجه شدم</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="application/json" id="categories-json">{{ categories | tojson }}</script>
+
+  <script type="application/json" id="order-catalog-json">{{ order_catalog | tojson }}</script>
+
+  <script>
+    var ORDER_CATALOG = {};
+    try {
+      ORDER_CATALOG = JSON.parse(document.getElementById('order-catalog-json').textContent);
+    } catch (e) { ORDER_CATALOG = { services: [], plans: [], customers: [] }; }
+    var RAW_CATEGORIES = [];
+    try {
+      RAW_CATEGORIES = JSON.parse(document.getElementById('categories-json').textContent);
+    } catch (e) { RAW_CATEGORIES = []; }
+    function openEditCategory(cid) {
+      var cat = (RAW_CATEGORIES || []).find(function (x) { return x.id === cid; });
+      if (!cat) return;
+      document.getElementById('edit-cat-name').value = cat.name || '';
+      document.getElementById('form-edit-category').action = '/category/' + encodeURIComponent(cid) + '/edit';
+      var wrap = document.getElementById('edit-cat-parent-wrap');
+      var sel = document.getElementById('edit-cat-parent-select');
+      var hint = document.getElementById('edit-cat-hint');
+      if (cat.kind === 'child') {
+        wrap.classList.remove('hidden');
+        hint.classList.add('hidden');
+        sel.disabled = false;
+        sel.required = true;
+        sel.value = cat.parent_id || '';
+      } else {
+        wrap.classList.add('hidden');
+        hint.classList.remove('hidden');
+        sel.disabled = true;
+        sel.required = false;
+        sel.value = '';
+      }
+      openModal('modal-edit-category');
+    }
+    function openEditCustomer(cid) {
+      var c = (ORDER_CATALOG.customers || []).find(function (x) { return x.id === cid; });
+      if (!c) return;
+      document.getElementById('edit-cust-name').value = c.name || '';
+      document.getElementById('edit-cust-phone').value = c.phone || '';
+      document.getElementById('edit-cust-address').value = c.address || '';
+      document.getElementById('form-edit-customer').action = '/customer/' + encodeURIComponent(cid) + '/edit';
+      openModal('modal-edit-customer');
+    }
+    var appPopupOnClose = null;
+    function showAppPopup(title, message, onClose) {
+      var backdrop = document.getElementById('popup-backdrop');
+      if (!backdrop) return;
+      document.getElementById('app-popup-title').textContent = title || 'پیام';
+      document.getElementById('app-popup-message').textContent = message || '';
+      appPopupOnClose = typeof onClose === 'function' ? onClose : null;
+      backdrop.classList.remove('hidden');
+      backdrop.classList.add('flex');
+    }
+    function closeAppPopup() {
+      var backdrop = document.getElementById('popup-backdrop');
+      if (!backdrop) return;
+      backdrop.classList.add('hidden');
+      backdrop.classList.remove('flex');
+      if (appPopupOnClose) {
+        var cb = appPopupOnClose;
+        appPopupOnClose = null;
+        cb();
+      }
+    }
+    function openEditService(sid) {
+      var svc = (ORDER_CATALOG.services || []).find(function (x) { return x.id === sid; });
+      if (!svc) return;
+      document.getElementById('edit-svc-name').value = svc.name || '';
+      document.getElementById('edit-svc-price').value = svc.price || '';
+      document.getElementById('edit-svc-extra-note').value = svc.extra_note || '';
+      var cids = svc.category_ids || [];
+      document.querySelectorAll('#form-edit-service .edit-svc-cat').forEach(function (cb) {
+        cb.checked = cids.indexOf(cb.value) >= 0;
+      });
+      resetServiceTermsUI('edit');
+      (svc.terms || []).forEach(function (term) {
+        appendServiceTermRow('edit', term);
+      });
+      document.getElementById('form-edit-service').action = '/service/' + encodeURIComponent(sid) + '/edit';
+      openModal('modal-edit-service');
+    }
+    function escapeHtmlSimple(value) {
+      return String(value || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+    function getServiceTermEls(mode) {
+      if (mode === 'edit') {
+        return {
+          input: document.getElementById('edit-service-term-input'),
+          hidden: document.getElementById('edit-service-terms-hidden'),
+          list: document.getElementById('edit-service-terms-list'),
+        };
+      }
+      return {
+        input: document.getElementById('service-term-input'),
+        hidden: document.getElementById('service-terms-hidden'),
+        list: document.getElementById('service-terms-list'),
+      };
+    }
+    function appendServiceTermRow(mode, value) {
+      var els = getServiceTermEls(mode);
+      if (!els.hidden || !els.list) return;
+      var clean = (value || '').trim();
+      if (!clean) return;
+      var hidden = document.createElement('input');
+      hidden.type = 'hidden';
+      hidden.name = 'terms';
+      hidden.value = clean;
+      els.hidden.appendChild(hidden);
+
+      var row = document.createElement('li');
+      row.className = 'flex items-center justify-between gap-2 rounded-md border border-emerald-800/60 bg-black/30 px-2 py-1';
+      row.innerHTML = '<span class="min-w-0 break-words">• ' + escapeHtmlSimple(clean) + '</span>' +
+        '<button type="button" class="shrink-0 text-[0.65rem] text-red-300 hover:text-red-200">حذف</button>';
+      var removeBtn = row.querySelector('button');
+      removeBtn.addEventListener('click', function () {
+        row.remove();
+        hidden.remove();
+      });
+      els.list.appendChild(row);
+    }
+    function addServiceTerm(mode) {
+      var els = getServiceTermEls(mode);
+      if (!els.input) return;
+      var value = (els.input.value || '').trim();
+      if (!value) return;
+      appendServiceTermRow(mode, value);
+      els.input.value = '';
+      els.input.focus();
+    }
+    function resetServiceTermsUI(mode) {
+      var els = getServiceTermEls(mode);
+      if (els.hidden) els.hidden.innerHTML = '';
+      if (els.list) els.list.innerHTML = '';
+      if (els.input) els.input.value = '';
+    }
+    function addPlanTerm() {
+      var input = document.getElementById('plan-term-input');
+      var hiddenBox = document.getElementById('plan-terms-hidden');
+      var list = document.getElementById('plan-terms-list');
+      if (!input || !hiddenBox || !list) return;
+      var value = (input.value || '').trim();
+      if (!value) return;
+      var hidden = document.createElement('input');
+      hidden.type = 'hidden';
+      hidden.name = 'terms';
+      hidden.value = value;
+      hiddenBox.appendChild(hidden);
+
+      var row = document.createElement('li');
+      row.className = 'flex items-center justify-between gap-2 rounded-md border border-emerald-800/60 bg-black/30 px-2 py-1';
+      row.innerHTML = '<span class="min-w-0 break-words">• ' + value.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</span>' +
+        '<button type="button" class="shrink-0 text-[0.65rem] text-red-300 hover:text-red-200">حذف</button>';
+      var removeBtn = row.querySelector('button');
+      removeBtn.addEventListener('click', function () {
+        row.remove();
+        hidden.remove();
+      });
+      list.appendChild(row);
+      input.value = '';
+      input.focus();
+    }
+    function resetPlanTermsUI() {
+      var hiddenBox = document.getElementById('plan-terms-hidden');
+      var list = document.getElementById('plan-terms-list');
+      var input = document.getElementById('plan-term-input');
+      if (hiddenBox) hiddenBox.innerHTML = '';
+      if (list) list.innerHTML = '';
+      if (input) input.value = '';
+    }
+    function openModal(id) {
+      var el = document.getElementById(id);
+      if (id === 'modal-plan') resetPlanTermsUI();
+      if (id === 'modal-service') resetServiceTermsUI('add');
+      el.classList.remove('hidden');
+      el.classList.add('flex');
+    }
+    function closeModal(id) {
+      var el = document.getElementById(id);
+      el.classList.add('hidden');
+      el.classList.remove('flex');
+      if (id === 'modal-plan') resetPlanTermsUI();
+      if (id === 'modal-service') resetServiceTermsUI('add');
+      if (id === 'modal-edit-service') resetServiceTermsUI('edit');
+    }
+    function syncCategoryKind() {
+      var parentCb = document.getElementById('cb-cat-parent');
+      var childCb = document.getElementById('cb-cat-child');
+      var hidden = document.getElementById('category-kind');
+      var wrap = document.getElementById('category-parent-wrap');
+      var sel = document.getElementById('category-parent-select');
+      if (childCb && childCb.checked) {
+        if (hidden) hidden.value = 'child';
+        if (wrap) wrap.classList.remove('hidden');
+        if (sel) sel.required = true;
+      } else {
+        if (parentCb && !parentCb.checked && childCb && !childCb.checked) {
+          if (parentCb) parentCb.checked = true;
+        }
+        if (hidden) hidden.value = 'parent';
+        if (wrap) wrap.classList.add('hidden');
+        if (sel) { sel.required = false; sel.value = ''; }
+      }
+    }
+    function onCategoryTypeParent() {
+      var parentCb = document.getElementById('cb-cat-parent');
+      var childCb = document.getElementById('cb-cat-child');
+      if (parentCb && parentCb.checked && childCb) childCb.checked = false;
+      if (parentCb && !parentCb.checked && childCb && !childCb.checked) parentCb.checked = true;
+      syncCategoryKind();
+    }
+    function onCategoryTypeChild() {
+      var parentCb = document.getElementById('cb-cat-parent');
+      var childCb = document.getElementById('cb-cat-child');
+      if (childCb && childCb.checked && parentCb) parentCb.checked = false;
+      if (childCb && !childCb.checked && parentCb && !parentCb.checked) childCb.checked = true;
+      syncCategoryKind();
+    }
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') {
+        ['modal-category', 'modal-customer', 'modal-service', 'modal-edit-service', 'modal-plan', 'modal-edit-category', 'modal-edit-customer'].forEach(closeModal);
+      }
+    });
+    document.getElementById('plan-term-input')?.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        addPlanTerm();
+      }
+    });
+    document.getElementById('service-term-input')?.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        addServiceTerm('add');
+      }
+    });
+    document.getElementById('edit-service-term-input')?.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        addServiceTerm('edit');
+      }
+    });
+  </script>
+</body>
+</html>
