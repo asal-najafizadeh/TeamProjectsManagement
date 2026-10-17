@@ -393,12 +393,12 @@
         {% if page.is_first %}
         <header class="header">
             <div class="logo-container">
-                {% if logo_src %}<img src="{{ logo_src }}" alt="لوگوی بالتازار" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">{% endif %}
-                <span class="logo-fallback">B A L T A Z A R</span>
+                {% if logo_src %}<img src="{{ logo_src }}" alt="Logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">{% endif %}
+                <span class="logo-fallback">TPM</span>
             </div>
             <div class="header-accent"></div>
-            <h1>تیم برندینگ بالتازار</h1>
-            <div class="subtitle">توسعه برند و رشد کسب‌وکار</div>
+            <h1>Team Projects Management</h1>
+            <div class="subtitle">مدیریت خدمات و صدور فاکتور</div>
             <div class="divider-dot">
                 <span class="line"></span><span></span><span class="line"></span>
             </div>
@@ -407,7 +407,7 @@
                 <i class="fas fa-headset" aria-hidden="true"></i>
                 <span class="contact-label">اطلاعات تماس</span>
                 <span class="contact-number">
-                    <i class="fas fa-phone-alt" aria-hidden="true"></i> {{ contact_phone or '۰۹۳۳۰۲۵۷۰۸۹' }}
+                    <i class="fas fa-phone-alt" aria-hidden="true"></i> {{ contact_phone or '[تلفن]' }}
                 </span>
             </div>
         </header>

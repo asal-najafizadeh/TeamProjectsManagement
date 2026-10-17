@@ -439,7 +439,7 @@ def create_receipt_pdf(
     )
     elements.append(service_table)
     elements.append(Spacer(1, 10))
-    elements.append(Paragraph(_fa_shape("ساخته شده توسط Team baltazar"), hint_style))
+    elements.append(Paragraph(_fa_shape("ساخته شده توسط Asal Najafizadeh"), hint_style))
     doc.build(elements)
     return str(file_path)
 
@@ -565,7 +565,7 @@ def build_roadmap_template_context(source: str, row: dict) -> dict:
     else:
         steps = roadmap_steps_from_standard_order(row)
         intro = (
-            f"تیم بالتازار مسیر همکاری را برای «{cname}» به‌صورت مرحله‌ای خلاصه کرده است. "
+            f"مسیر همکاری برای «{cname}» به‌صورت مرحله‌ای در این فاکتور خلاصه شده است. "
             f"شماره سفارش: {_fa_digits(oid)}."
         )
     section_title = "مراحل همکاری و خدمات"
@@ -573,7 +573,7 @@ def build_roadmap_template_context(source: str, row: dict) -> dict:
     total_fa = _money(int(row.get("total_price") or 0))
 
     return {
-        "doc_title": "فاکتور رودمپ | بالتازار",
+        "doc_title": "فاکتور رودمپ | Team Projects Management",
         "logo_src": logo_src,
         "dana_font_uri": dana_font_uri,
         "header_title": "فاکتور رودمپ سفارش",
@@ -715,7 +715,7 @@ def build_simple_invoice_context(row: dict) -> dict:
     total = int(row.get("total_price") or 0)
 
     return {
-        "doc_title": "فاکتور فروش | بالتازار پلاس",
+        "doc_title": "فاکتور فروش | Team Projects Management",
         "dana_font_uri": dana_font_uri,
         "logo_src": logo_src,
         "invoice_number": inv,
@@ -1017,12 +1017,12 @@ def build_panel_invoice_context(row: dict) -> dict:
     panel_pages = paginate_panel_cards(cards)
 
     return {
-        "doc_title": "پنل‌های تیم برندینگ بالتازار پلاس",
+        "doc_title": "پنل‌های قیمت‌گذاری | Team Projects Management",
         "dana_font_uri": dana_font_uri,
         "logo_src": logo_src,
         "panel_cards": cards,
         "panel_pages": panel_pages,
-        "contact_phone": "۰۹۳۳۰۲۵۷۰۸۹",
+        "contact_phone": "",
     }
 
 

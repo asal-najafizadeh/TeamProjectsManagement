@@ -218,7 +218,7 @@ def customers() -> list:
             "id": CUS_SARA,
             "name": "سارا احمدی",
             "phone": "09351234567",
-            "address": "مشهد، احمدآباد، پلاک ۱۲",
+            "address": "آدرس نمونه",
         },
         {
             "id": CUS_REZA,

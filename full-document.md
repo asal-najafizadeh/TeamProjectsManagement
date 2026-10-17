@@ -1,15 +1,13 @@
 # Technical Specification & Architecture Document
-## Team Projects Management — Baltazar Team Invoicing & Order System
+## Team Projects Management — Invoicing & Order System
 
 | | |
 |---|---|
 | **Document Type** | Technical Specification & Architecture Document |
 | **Project Name** | Team Projects Management (سیستم مدیریت پروژه و صدور فاکتور) |
-| **Owner / Client** | Team Baltazar (تیم بالتازار) |
+| **Author / Developer** | Asal Najafizadeh |
 | **Version** | 1.0 |
-| **Status** | Production (deployed) |
-| **Live Reference** | https://teamprojectsmanagement.onrender.com/ |
-| **Author** | Lead Systems Architect & Technical Author (generated specification) |
+| **Status** | Open source |
 
 ---
 
@@ -29,7 +27,7 @@
 
 ### 1.1 Executive Summary
 
-**Team Projects Management** is an internal, single-tenant business-operations tool built for **Team Baltazar** to manage a service catalog (categories, services, and bundled plans), maintain a customer registry, capture sales orders, and automatically generate Persian (Farsi), right-to-left (RTL) PDF invoices in four distinct formats.
+**Team Projects Management** is a single-tenant business-operations tool to manage a service catalog (categories, services, and bundled plans), maintain a customer registry, capture sales orders, and automatically generate Persian (Farsi), right-to-left (RTL) PDF invoices in four distinct formats.
 
 The system is a **Python/Flask monolith** with a **flat-file JSON persistence layer** (no relational database), a **server-rendered Jinja2 + Tailwind CSS** front end, and a **dual-engine PDF pipeline** combining ReportLab (native PDF drawing) and Playwright/Chromium (HTML-to-PDF rendering) to support rich, templated invoice layouts with full Persian typography (RTL shaping via `arabic-reshaper` and `python-bidi`, Persian digit conversion, and the custom **Dana** font family).
 
@@ -46,7 +44,7 @@ The application serves two operational roles:
 
 | Stakeholder | Interest |
 |---|---|
-| Team Baltazar (business owner) | Accurate, branded, Persian-language invoicing without third-party SaaS dependency |
+| Operators / administrators | Catalog management and Persian-language invoicing without third-party SaaS dependency |
 | Sales operators | Fast order capture, flexible invoice formats (standard, simple, roadmap, tiered-panel) |
 | End customers (invoice recipients) | Clear, professional, correctly formatted Persian invoices |
 | Maintaining developer(s) | A small, dependency-light, file-based system that is easy to self-host and back up |
@@ -61,7 +59,7 @@ The application serves two operational roles:
 
 ### 1.5 Non-Goals / Explicit Scope Boundaries
 
-- No multi-tenant support — the system is scoped to one organization (Baltazar) with one implicit admin role and no authentication layer in the current implementation.
+- No multi-tenant support — the system is scoped to a single organization with one implicit admin role and no authentication layer in the current implementation.
 - No relational database, ORM, or query engine — all persistence is JSON-array-per-entity, read/rewritten in full on every mutation.
 - No payment gateway integration; the system issues invoices, not payment collection.
 - No user account system / login flow (see [Section 7](#7-security--error-handling) for the security implications of this).
@@ -206,7 +204,7 @@ TeamProjectsManagement/
 │   ├── fonts/
 │   │   └── Dana-Black.ttf       # Persian typeface — used in web UI and all PDF invoices
 │   └── images/
-│       └── logo.png             # Baltazar team logo (invoice header, UI branding)
+│       └── logo.png             # Project logo (invoice header, UI branding)
 │
 ├── Database/                    # Flat-file JSON persistence (source of truth)
 │   ├── categories.json          # Hierarchical service categories (parent/child)
@@ -758,12 +756,12 @@ jobs:
       #   run: <platform-specific deploy step, e.g. Render deploy hook>
 ```
 
-### 6.5 Current Production Deployment
+### 6.5 Production Deployment
 
-The live instance (`https://teamprojectsmanagement.onrender.com/`) is deployed on **Render**, a PaaS well-suited to this Dockerfile-driven, single-container architecture. Operational notes for this or any equivalent PaaS:
+When deploying this Dockerfile-driven, single-container application to a PaaS or VPS:
 
-- Render's ephemeral filesystem means `Database/` and `reciept/` **must** be backed by a Render **persistent disk** (or migrated to external object storage) — otherwise catalog data and issued invoices are lost on every redeploy/restart.
-- Cold starts on free/low tiers will be slower due to the larger Playwright/Chromium base image; budget for this in health-check timeout configuration.
+- Ephemeral filesystems mean `Database/` and `reciept/` **must** use persistent storage (mounted volume or external object storage) — otherwise catalog data and issued invoices are lost on redeploy/restart.
+- Cold starts may be slower due to the Playwright/Chromium image; allow sufficient health-check timeouts.
 
 ### 6.6 Backup & Data Durability
 
